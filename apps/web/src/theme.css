@@ -687,4 +687,4 @@ input[type='number'] {
 .fog-row .btn { flex: 1; }
 .fog-reset { border-top: 1px solid var(--border); padding-top: 10px; }
 .fog-menu input[type='range'] { width: 100%; }
-.fog-stop { width: 100%; color: var(--text-dim); }
+.fog-stop { width: 100%; border-color: #e5a24b !important; color: #e5a24b !important; }
