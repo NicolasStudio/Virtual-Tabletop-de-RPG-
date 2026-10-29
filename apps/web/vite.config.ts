@@ -4,4 +4,15 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: { port: 5173 },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          konva: ['konva', 'react-konva'],
+          socket: ['socket.io-client'],
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
 });
