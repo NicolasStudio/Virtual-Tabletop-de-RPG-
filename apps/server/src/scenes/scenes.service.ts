@@ -211,10 +211,10 @@ export class ScenesService {
   }
 
   /**
-   * Atualiza um token com controle de propriedade:
+   * Atualiza um token com controle de papel:
    *  - GM pode tudo.
-   *  - PLAYER só mexe em token que ele possui (ownerUserId) e que não esteja
-   *    bloqueado; e NÃO pode mudar visibilidade/owner/lock (campos de GM).
+   *  - PLAYER pode MOVER qualquer token não bloqueado (posição/rotação/tamanho),
+   *    mas NÃO pode mudar visibilidade/owner/lock (campos de GM). Excluir é só GM.
    */
   async updateToken(
     campaignId: string,
@@ -226,14 +226,16 @@ export class ScenesService {
     const token = await this.loadTokenInCampaign(campaignId, tokenId);
 
     if (role !== 'GM') {
-      const owns = token.ownerUserId === userId;
-      if (!owns || token.isLocked) {
-        throw new ForbiddenException('Você não pode mover este token.');
+      // jogador só é barrado se o token estiver BLOQUEADO pelo mestre
+      if (token.isLocked) {
+        throw new ForbiddenException('Este token está bloqueado pelo mestre.');
       }
-      // remove campos reservados ao GM
+      // campos reservados ao GM nunca são aplicados por um jogador
       delete data.isHidden;
       delete data.isLocked;
       delete data.ownerUserId;
+      delete data.folderId;
+      delete data.kind;
     }
 
     const updated = await this.prisma.token.update({ where: { id: tokenId }, data });

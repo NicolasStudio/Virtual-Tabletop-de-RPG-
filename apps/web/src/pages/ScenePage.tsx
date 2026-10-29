@@ -256,7 +256,8 @@ export function ScenePage() {
     }
   }
 
-  const canEditToken = (t: TokenDTO) => isGm || t.ownerUserId === user?.id;
+  // jogador pode mover qualquer token não bloqueado; GM move tudo. Excluir é só GM.
+  const canEditToken = (t: TokenDTO) => isGm || !t.isLocked;
 
   // mover/esticar mapa-overlay: só GM. Atualização otimista + PATCH no servidor.
   function onOverlayChange(overlayId: string, data: Partial<MapOverlayDTO>) {
