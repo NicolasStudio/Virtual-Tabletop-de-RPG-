@@ -71,8 +71,8 @@ export function DicePanel({ campaignId }: Props) {
           value={visibility}
           onChange={(e) => setVisibility(e.target.value as RollRequest['visibility'])}
         >
-          <option value="PUBLIC">pública</option>
-          <option value="PRIVATE">privada</option>
+          <option value="PUBLIC">Pública</option>
+          <option value="PRIVATE">Privada</option>
         </select>
       </div>
 

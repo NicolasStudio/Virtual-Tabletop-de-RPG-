@@ -379,15 +379,10 @@ export function ScenePage() {
         <>
           <div className="drawer-backdrop" onClick={() => setDiceOpen(false)} />
           <aside className="dice-drawer card" role="dialog" aria-label="Dados">
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-              <h3 style={{ margin: 0 }}>🎲 Dados</h3>
-              <button
-                className="link-btn"
-                style={{ color: 'var(--text-dim)' }}
-                onClick={() => setDiceOpen(false)}
-                aria-label="Fechar"
-              >
-                fechar ✕
+            <div className="drawer-head">
+              <h3>🎲 Dados</h3>
+              <button className="drawer-close" onClick={() => setDiceOpen(false)} aria-label="Fechar" title="Fechar">
+                ✕
               </button>
             </div>
             <DicePanel campaignId={campaignId} canSeeGmVisibility={isGm} />
@@ -399,15 +394,10 @@ export function ScenePage() {
         <>
           <div className="drawer-backdrop" onClick={() => setCombatOpen(false)} />
           <aside className="dice-drawer card" role="dialog" aria-label="Combate">
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-              <h3 style={{ margin: 0 }}>⚔ Combate</h3>
-              <button
-                className="link-btn"
-                style={{ color: 'var(--text-dim)' }}
-                onClick={() => setCombatOpen(false)}
-                aria-label="Fechar"
-              >
-                fechar ✕
+            <div className="drawer-head">
+              <h3>⚔ Combate</h3>
+              <button className="drawer-close" onClick={() => setCombatOpen(false)} aria-label="Fechar" title="Fechar">
+                ✕
               </button>
             </div>
             <CombatTracker campaignId={campaignId} isGm={isGm} tokens={current?.tokens ?? []} />

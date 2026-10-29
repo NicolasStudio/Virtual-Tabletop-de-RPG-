@@ -68,8 +68,9 @@ function CombatantRow({
           <button className="btn ghost sm" onClick={() => applyDamage(1)} title="dano">−</button>
           <button className="btn ghost sm" onClick={() => applyDamage(-1)} title="cura">+</button>
           <button
-            className="link-btn"
+            className="combatant-remove"
             title="remover da fila"
+            aria-label="remover da fila"
             onClick={async () => { await combatApi.remove(campaignId, c.id); onChanged(); }}
           >
             ✕
@@ -201,7 +202,7 @@ export function CombatTracker({ campaignId, isGm, tokens = [] }: Props) {
             <button className="btn sm" type="submit">+ Adicionar</button>
           </form>
           {tokens.length > 0 && (
-            <button className="link-btn" style={{ marginTop: 4 }} onClick={addAllTokens}>
+            <button className="btn ghost sm combat-add-all" onClick={addAllTokens}>
               + Adicionar todos os tokens do mapa ({tokens.length})
             </button>
           )}

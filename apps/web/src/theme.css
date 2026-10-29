@@ -543,3 +543,58 @@ input[type='number'] {
   user-select: none;
 }
 .stb-snap:hover { color: var(--text); }
+
+
+/* ---- Ajustes de acabamento (drawers, combate, snap) ---- */
+.stb-snap { white-space: nowrap; }
+.stb-snap span { white-space: nowrap; }
+
+/* header dos drawers (Dados / Combate) + botão fechar redondo */
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.drawer-head h3 { margin: 0; font-size: 16px; }
+.drawer-close {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.drawer-close:hover { background: var(--bg-elev); color: var(--text); }
+
+/* botão de remover combatente */
+.combatant-remove {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+}
+.combatant-remove:hover { background: #e5737322; border-color: #e5737355; color: #e57373; }
+
+/* botão 'adicionar todos os tokens' */
+.combat-add-all {
+  margin-top: 8px;
+  width: 100%;
+}

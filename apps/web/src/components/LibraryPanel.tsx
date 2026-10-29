@@ -20,10 +20,10 @@ interface Props {
 }
 
 const SECTION_META: { kind: FolderKind; icon: string; label: string }[] = [
-  { kind: 'SCENE', icon: '🗺️', label: 'Cenas' },
-  { kind: 'MAP', icon: '🧭', label: 'Mapas' },
-  { kind: 'TOKEN', icon: '🎭', label: 'Tokens' },
-  { kind: 'ITEM', icon: '💎', label: 'Itens' },
+  { kind: 'SCENE', icon: '🏞️', label: 'Cenas' },
+  { kind: 'MAP', icon: '🗺️', label: 'Mapas' },
+  { kind: 'TOKEN', icon: '👤', label: 'Tokens' },
+  { kind: 'ITEM', icon: '🎒', label: 'Itens' },
 ];
 
 export function LibraryPanel(props: Props) {
@@ -389,7 +389,7 @@ function OverlayRow({ overlay, isGm, onDelete }: { overlay: MapOverlayDTO; isGm:
   return (
     <div className="lib-item">
       <span className="lib-item-name" title={overlay.name}>
-        {overlay.imageUrl ? <img src={overlay.imageUrl} alt="" className="lib-thumb" /> : '🧭'} {overlay.name}
+        {overlay.imageUrl ? <img src={overlay.imageUrl} alt="" className="lib-thumb" /> : '🗺️'} {overlay.name}
       </span>
       {isGm && (
         <button className="lib-mini danger" title="Remover mapa" onClick={onDelete}>🗑</button>
