@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { SceneDTO, TokenDTO, AssetFolderDTO, FolderKind, TokenKind, MapOverlayDTO } from '@tabletop/shared';
 import { foldersApi, buildFolderTree, type FolderNode } from '../lib/folders.js';
-import { assetUrl } from '../lib/assets.js';
 
 interface Props {
   campaignId: string;
@@ -362,7 +361,7 @@ function SceneRow({
   return (
     <div className={`lib-item ${active ? 'active' : ''}`}>
       <button className="lib-item-name" onClick={onOpen} title="Abrir cena">
-        🗺️ {scene.name}
+        <span className="lib-ico">🏞️</span> {scene.name}
       </button>
       {isGm && (
         <button className="lib-mini danger" title="Excluir cena" onClick={onDelete}>🗑</button>
@@ -377,7 +376,7 @@ function TokenRow({ token, isGm, onDelete }: { token: TokenDTO; isGm: boolean; o
   return (
     <div className="lib-item">
       <span className="lib-item-name" title={token.name}>
-        {token.imageUrl ? <img src={assetUrl(token.imageUrl)} alt="" className="lib-thumb" /> : kindIcon} {token.name}
+        <span className="lib-ico">{kindIcon}</span> {token.name}
       </span>
       {isGm && (
         <button className="lib-mini danger" title="Remover token" onClick={onDelete}>🗑</button>
@@ -390,7 +389,7 @@ function OverlayRow({ overlay, isGm, onDelete }: { overlay: MapOverlayDTO; isGm:
   return (
     <div className="lib-item">
       <span className="lib-item-name" title={overlay.name}>
-        {overlay.imageUrl ? <img src={assetUrl(overlay.imageUrl)} alt="" className="lib-thumb" /> : '🗺️'} {overlay.name}
+        <span className="lib-ico">🗺️</span> {overlay.name}
       </span>
       {isGm && (
         <button className="lib-mini danger" title="Remover mapa" onClick={onDelete}>🗑</button>

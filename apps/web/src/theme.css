@@ -641,3 +641,11 @@ input[type='number'] {
   line-height: 1.2;
 }
 .combat-head { gap: 8px; align-items: center; }
+
+/* ícone (emoji) fixo dos itens da biblioteca */
+.lib-ico {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
