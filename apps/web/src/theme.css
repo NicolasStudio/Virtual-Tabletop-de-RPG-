@@ -687,6 +687,6 @@ input[type='number'] {
 .fog-row .btn { flex: 1; }
 .fog-reset { border-top: 1px solid var(--border); padding-top: 10px; }
 .fog-menu input[type='range'] { width: 100%; }
-.fog-stop { width: 100%; border-color: #e5a24b !important; color: #e5a24b !important; }
+.fog-stop { width: 100%; color: #1a140b !important; font-weight: 700; }
 /* botões sólidos (selecionados) do menu de névoa: texto escuro legível sobre o dourado */
 .fog-menu .btn:not(.ghost):not(.fog-stop) { color: #1a140b !important; }
