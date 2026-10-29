@@ -373,7 +373,7 @@ export function ScenePage() {
                 aria-expanded={fogMenu}
                 title="Ferramentas de névoa de guerra"
               >
-                🌫️ Névoa
+                ☁ Névoa
               </button>
               {fogMenu && (
                 <div className="fog-menu card">
@@ -407,7 +407,7 @@ export function ScenePage() {
 
                   {fogMode && fogBrush && (
                     <div className="fog-group">
-                      <span className="fog-group-label">Tamanho do pincel</span>
+                      <span className="fog-group-label">Espessura do pincel: {brushSize}px</span>
                       <input
                         type="range" min={20} max={160} value={brushSize}
                         onChange={(e) => setBrushSize(Number(e.target.value))}
