@@ -18,6 +18,21 @@ function makePrisma(opts: { scene?: any; tokens?: any[]; token?: any } = {}) {
       }),
       delete: vi.fn(async () => ({})),
     },
+    mapOverlay: {
+      findMany: vi.fn(async () => []),
+      findUnique: vi.fn(async () => null),
+      create: vi.fn(async () => ({})),
+      update: vi.fn(async () => ({})),
+      delete: vi.fn(async () => ({})),
+    },
+    sceneFog: {
+      findUnique: vi.fn(async () => null),
+      create: vi.fn(async () => ({})),
+      update: vi.fn(async () => ({})),
+    },
+    asset: {
+      findUnique: vi.fn(async () => null),
+    },
   } as any;
 }
 
@@ -60,10 +75,9 @@ describe('ScenesService.updateToken — propriedade', () => {
     expect(r.x).toBe(10);
   });
 
-  it('PLAYER não-dono é bloqueado', async () => {
-    await expect(svc.updateToken('c1', 't1', 'outro', 'PLAYER', { x: 10 })).rejects.toThrow(
-      ForbiddenException,
-    );
+  it('PLAYER não-dono também move token não bloqueado (regra atual)', async () => {
+    const r = await svc.updateToken('c1', 't1', 'outro', 'PLAYER', { x: 10 });
+    expect(r.x).toBe(10);
   });
 
   it('PLAYER não altera campos de GM (isHidden/isLocked/owner)', async () => {
