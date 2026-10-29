@@ -1,0 +1,29 @@
+{
+  "name": "tabletop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tabletop VTT — Virtual Tabletop de RPG online, modular, em tempo real.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:shared": "npm run build -w @tabletop/shared",
+    "dev:server": "npm run dev -w @tabletop/server",
+    "dev:web": "npm run dev -w @tabletop/web",
+    "build": "npm run build -w @tabletop/shared && npm run build -w @tabletop/server && npm run build -w @tabletop/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate -w @tabletop/server",
+    "prisma:migrate": "npm run prisma:migrate -w @tabletop/server",
+    "seed": "npm run seed -w @tabletop/server"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

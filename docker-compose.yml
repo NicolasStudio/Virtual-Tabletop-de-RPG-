@@ -1,0 +1,33 @@
+# Ambiente de desenvolvimento: Postgres (obrigatório) + Redis (opcional, escala).
+# Uso: docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tabletop
+      POSTGRES_PASSWORD: tabletop
+      POSTGRES_DB: tabletop
+    ports:
+      - "5432:5432"
+    volumes:
+      - tabletop_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tabletop"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Opcional: habilite com `docker compose --profile scale up -d`
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    profiles: ["scale"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - tabletop_redisdata:/data
+
+volumes:
+  tabletop_pgdata:
+  tabletop_redisdata:

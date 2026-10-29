@@ -1,0 +1,24 @@
+# deps
+node_modules/
+# builds
+dist/
+build/
+*.tsbuildinfo
+# env / secrets
+.env
+.env.*
+!.env.example
+# prisma
+apps/server/prisma/migrations/dev.db*
+# logs
+*.log
+logs/
+# uploads locais
+uploads/
+# editor
+.vscode/
+.idea/
+.DS_Store
+# playwright
+test-results/
+playwright-report/
