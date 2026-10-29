@@ -38,6 +38,8 @@ export const scenesApi = {
     api(`/campaigns/${campaignId}/scenes/${sceneId}/fog/enabled`, { method: 'POST', body: JSON.stringify({ enabled }) }) as Promise<SceneFogDTO>,
   paintFog: (campaignId: string, sceneId: string, cells: string[], mode: 'reveal' | 'hide') =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}/fog/paint`, { method: 'POST', body: JSON.stringify({ cells, mode }) }) as Promise<SceneFogDTO>,
+  brushFog: (campaignId: string, sceneId: string, dots: { x: number; y: number; r: number }[], mode: 'reveal' | 'hide') =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/fog/brush`, { method: 'POST', body: JSON.stringify({ dots, mode }) }) as Promise<SceneFogDTO>,
   resetFog: (campaignId: string, sceneId: string, revealAll: boolean) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}/fog/reset`, { method: 'POST', body: JSON.stringify({ revealAll }) }) as Promise<SceneFogDTO>,
 };

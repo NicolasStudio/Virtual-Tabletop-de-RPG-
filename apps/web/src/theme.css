@@ -665,3 +665,5 @@ input[type='number'] {
   border-color: #6db1e4 !important;
   color: #6db1e4 !important;
 }
+.fog-size { display: inline-flex; align-items: center; }
+.fog-size input[type='range'] { width: 70px; }

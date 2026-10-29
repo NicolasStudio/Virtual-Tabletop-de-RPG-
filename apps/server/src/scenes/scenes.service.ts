@@ -6,6 +6,8 @@ function toFogDTO(f: any): SceneFogDTO {
   return {
     enabled: !!f?.enabled,
     revealedCells: Array.isArray(f?.revealedCells) ? f.revealedCells : [],
+    brushReveal: Array.isArray(f?.brushReveal) ? f.brushReveal : [],
+    brushHide: Array.isArray(f?.brushHide) ? f.brushHide : [],
   };
 }
 
@@ -126,24 +128,50 @@ export class ScenesService {
 
   // -------- névoa de guerra (modelo A, por células) — só GM muta --------
 
-  private async upsertFog(sceneId: string, data: { enabled?: boolean; revealedCells?: string[] }) {
+  private async upsertFog(
+    sceneId: string,
+    data: { enabled?: boolean; revealedCells?: string[]; brushReveal?: any[]; brushHide?: any[] },
+  ) {
     const existing = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
+    const patch: any = {};
+    if (data.enabled !== undefined) patch.enabled = data.enabled;
+    if (data.revealedCells !== undefined) patch.revealedCells = data.revealedCells;
+    if (data.brushReveal !== undefined) patch.brushReveal = data.brushReveal;
+    if (data.brushHide !== undefined) patch.brushHide = data.brushHide;
     const row = existing
-      ? await this.prisma.sceneFog.update({
-          where: { sceneId },
-          data: {
-            ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
-            ...(data.revealedCells !== undefined ? { revealedCells: data.revealedCells } : {}),
-          },
-        })
+      ? await this.prisma.sceneFog.update({ where: { sceneId }, data: patch })
       : await this.prisma.sceneFog.create({
           data: {
             sceneId,
             enabled: data.enabled ?? false,
             revealedCells: data.revealedCells ?? [],
+            brushReveal: data.brushReveal ?? [],
+            brushHide: data.brushHide ?? [],
           },
         });
     return toFogDTO(row);
+  }
+
+  // adiciona traços de pincel à mão livre (círculos). mode decide revelar/ocultar.
+  async paintFogBrush(
+    campaignId: string,
+    sceneId: string,
+    dots: { x: number; y: number; r: number }[],
+    mode: 'reveal' | 'hide',
+  ): Promise<SceneFogDTO> {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    const row = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
+    const reveal = Array.isArray(row?.brushReveal) ? (row!.brushReveal as any[]) : [];
+    const hide = Array.isArray(row?.brushHide) ? (row!.brushHide as any[]) : [];
+    const clean = dots.filter((d) => Number.isFinite(d.x) && Number.isFinite(d.y) && d.r > 0).slice(0, 2000);
+    if (mode === 'reveal') reveal.push(...clean);
+    else hide.push(...clean);
+    // limita o histórico para não crescer sem fim
+    return this.upsertFog(sceneId, {
+      enabled: row?.enabled ?? true,
+      brushReveal: reveal.slice(-5000),
+      brushHide: hide.slice(-5000),
+    });
   }
 
   async getFog(campaignId: string, sceneId: string): Promise<SceneFogDTO> {
@@ -179,8 +207,8 @@ export class ScenesService {
     await this.assertSceneInCampaign(campaignId, sceneId);
     // revelar tudo = lista vazia + enabled false (sem névoa); ocultar tudo = enabled true, nada revelado
     return revealAll
-      ? this.upsertFog(sceneId, { enabled: false, revealedCells: [] })
-      : this.upsertFog(sceneId, { enabled: true, revealedCells: [] });
+      ? this.upsertFog(sceneId, { enabled: false, revealedCells: [], brushReveal: [], brushHide: [] })
+      : this.upsertFog(sceneId, { enabled: true, revealedCells: [], brushReveal: [], brushHide: [] });
   }
 
   // -------- mapas-overlay (só GM muta; render entre fundo e tokens) --------

@@ -22,6 +22,8 @@ export function ScenePage() {
   const [libOpen, setLibOpen] = useState(true);
   const [snap, setSnap] = useState(true);
   const [fogMode, setFogMode] = useState<'reveal' | 'hide' | null>(null);
+  const [fogBrush, setFogBrush] = useState(true); // true = pincel livre; false = por célula
+  const [brushSize, setBrushSize] = useState(60);
   const [error, setError] = useState<string | null>(null);
 
   const isGm = role === 'GM';
@@ -287,9 +289,23 @@ export function ScenePage() {
       if (!c) return c;
       const set = new Set(c.fog.revealedCells);
       for (const cell of cells) mode === 'reveal' ? set.add(cell) : set.delete(cell);
-      return { ...c, fog: { enabled: true, revealedCells: [...set] } };
+      return { ...c, fog: { ...c.fog, enabled: true, revealedCells: [...set] } };
     });
     void scenesApi.paintFog(campaignId, current.scene.id, cells, mode).catch((e: any) =>
+      setError(e?.message ?? 'Falha ao pintar a névoa.'),
+    );
+  }
+
+  function onFogBrush(dots: { x: number; y: number; r: number }[], mode: 'reveal' | 'hide') {
+    if (!current || !isGm) return;
+    setCurrent((c) => {
+      if (!c) return c;
+      const fog = { ...c.fog, enabled: true };
+      if (mode === 'reveal') fog.brushReveal = [...c.fog.brushReveal, ...dots];
+      else fog.brushHide = [...c.fog.brushHide, ...dots];
+      return { ...c, fog };
+    });
+    void scenesApi.brushFog(campaignId, current.scene.id, dots, mode).catch((e: any) =>
       setError(e?.message ?? 'Falha ao pintar a névoa.'),
     );
   }
@@ -368,18 +384,43 @@ export function ScenePage() {
               {current.fog.enabled && (
                 <>
                   <button
+                    className={`btn sm ${fogBrush ? '' : 'ghost'}`}
+                    onClick={() => setFogBrush(true)}
+                    title="Pincel à mão livre"
+                  >
+                    🖊 Pincel
+                  </button>
+                  <button
+                    className={`btn sm ${fogBrush ? 'ghost' : ''}`}
+                    onClick={() => setFogBrush(false)}
+                    title="Pintar por célula da grade"
+                  >
+                    ▦ Célula
+                  </button>
+                  {fogBrush && (
+                    <label className="fog-size" title="Tamanho do pincel">
+                      <input
+                        type="range"
+                        min={20}
+                        max={160}
+                        value={brushSize}
+                        onChange={(e) => setBrushSize(Number(e.target.value))}
+                      />
+                    </label>
+                  )}
+                  <button
                     className={`btn sm ${fogMode === 'reveal' ? '' : 'ghost'}`}
                     onClick={() => setFogMode((m) => (m === 'reveal' ? null : 'reveal'))}
-                    title="Pincel: revelar células"
+                    title="Revelar"
                   >
                     👁 Revelar
                   </button>
                   <button
                     className={`btn sm ${fogMode === 'hide' ? '' : 'ghost'}`}
                     onClick={() => setFogMode((m) => (m === 'hide' ? null : 'hide'))}
-                    title="Pincel: ocultar células"
+                    title="Esconder"
                   >
-                    🌑 Ocultar
+                    🌑 Esconder
                   </button>
                   <button className="btn ghost sm" onClick={() => resetFog(false)} title="Cobrir toda a cena de névoa">
                     Ocultar tudo
@@ -433,7 +474,10 @@ export function ScenePage() {
               onOverlayDelete={deleteOverlay}
               fog={current.fog}
               fogPaintMode={isGm ? fogMode : null}
+              fogBrush={fogBrush}
+              brushSize={brushSize}
               onFogPaint={onFogPaint}
+              onFogBrush={onFogBrush}
             />
           ) : (
             <div className="card">

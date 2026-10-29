@@ -40,6 +40,14 @@ export interface MapOverlayDTO {  id: string;
 export interface SceneFogDTO {
   enabled: boolean;
   revealedCells: string[]; // "col,row"
+  brushReveal: FogBrushDot[]; // círculos revelados à mão livre
+  brushHide: FogBrushDot[];   // círculos ocultados à mão livre
+}
+
+export interface FogBrushDot {
+  x: number;
+  y: number;
+  r: number;
 }
 
 export interface PublicUser {

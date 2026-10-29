@@ -192,6 +192,18 @@ export class ScenesController {
     return fog;
   }
 
+  @Post(':sceneId/fog/brush')
+  @RequireRole('GM')
+  async brushFog(
+    @Param('campaignId') campaignId: string,
+    @Param('sceneId') sceneId: string,
+    @Body() dto: { dots: { x: number; y: number; r: number }[]; mode: 'reveal' | 'hide' },
+  ) {
+    const fog = await this.scenes.paintFogBrush(campaignId, sceneId, dto.dots ?? [], dto.mode === 'hide' ? 'hide' : 'reveal');
+    this.realtime.broadcastFog(campaignId, sceneId, fog);
+    return fog;
+  }
+
   @Post(':sceneId/fog/reset')
   @RequireRole('GM')
   async resetFog(

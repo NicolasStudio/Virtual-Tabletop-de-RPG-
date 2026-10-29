@@ -309,6 +309,8 @@ model SceneFog {
   sceneId       String   @unique
   enabled       Boolean  @default(false)
   revealedCells Json     @default("[]")
+  brushReveal   Json     @default("[]")  // círculos revelados à mão livre: [{x,y,r}]
+  brushHide     Json     @default("[]")  // círculos ocultados à mão livre: [{x,y,r}]
   updatedAt     DateTime @updatedAt
 
   scene         Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)

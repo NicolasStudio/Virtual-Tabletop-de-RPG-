@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Stage, Layer, Rect, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Rect, Circle, Group, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import type { SceneDTO, TokenDTO } from '@tabletop/shared';
 import { GridLayer } from './GridLayer.js';
@@ -41,10 +41,13 @@ interface Props {
   onOverlayDelete: (overlayId: string) => void;
   fog: SceneFogDTO;
   fogPaintMode: 'reveal' | 'hide' | null; // quando != null, o GM está pintando névoa
+  fogBrush: boolean; // true = pincel à mão livre; false = por célula
+  brushSize: number; // raio do pincel livre (px da cena)
   onFogPaint: (cells: string[], mode: 'reveal' | 'hide') => void;
+  onFogBrush: (dots: { x: number; y: number; r: number }[], mode: 'reveal' | 'hide') => void;
 }
 
-export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, onOverlayDelete, fog, fogPaintMode, onFogPaint }: Props) {
+export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, onOverlayDelete, fog, fogPaintMode, fogBrush, brushSize, onFogPaint, onFogBrush }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -71,10 +74,24 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
     return `${col},${row}`;
   }
 
+  // ponto do palco em coords da cena (para o pincel livre)
+  function pointInScene(): { x: number; y: number } | null {
+    const st = stageRef.current;
+    const p = st?.getPointerPosition();
+    if (!st || !p) return null;
+    const scaleNow = st.scaleX();
+    return { x: (p.x - st.x()) / scaleNow, y: (p.y - st.y()) / scaleNow };
+  }
+
   function paintAtPointer() {
     if (!fogPaintMode) return;
-    const cell = cellAtPointer();
-    if (cell) onFogPaint([cell], fogPaintMode);
+    if (fogBrush) {
+      const pt = pointInScene();
+      if (pt) onFogBrush([{ x: pt.x, y: pt.y, r: brushSize }], fogPaintMode);
+    } else {
+      const cell = cellAtPointer();
+      if (cell) onFogPaint([cell], fogPaintMode);
+    }
   }
 
   // zoom centrado no cursor
@@ -176,21 +193,47 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         </Layer>
         {fog.enabled && (
           <Layer listening={false}>
-            {Array.from({ length: cols * rows }).map((_, i) => {
-              const col = i % cols;
-              const row = Math.floor(i / cols);
-              if (revealed.has(`${col},${row}`)) return null;
-              return (
-                <Rect
-                  key={`fog-${col}-${row}`}
-                  x={col * gs}
-                  y={row * gs}
-                  width={gs}
-                  height={gs}
-                  fill={isGm ? 'rgba(10,8,5,0.5)' : '#05040a'}
+            <Group opacity={isGm ? 0.5 : 1}>
+              {/* névoa plena cobrindo a cena */}
+              <Rect width={scene.width} height={scene.height} fill="#05040a" />
+              {/* FUROS (destination-out): células reveladas */}
+              {[...revealed].map((key) => {
+                const [col, row] = key.split(',').map(Number);
+                return (
+                  <Rect
+                    key={`rv-${key}`}
+                    x={col * gs}
+                    y={row * gs}
+                    width={gs}
+                    height={gs}
+                    fill="#000"
+                    globalCompositeOperation="destination-out"
+                  />
+                );
+              })}
+              {/* FUROS: pincel revelar (círculos) */}
+              {fog.brushReveal.map((d, i) => (
+                <Circle
+                  key={`br-${i}`}
+                  x={d.x}
+                  y={d.y}
+                  radius={d.r}
+                  fill="#000"
+                  globalCompositeOperation="destination-out"
                 />
-              );
-            })}
+              ))}
+              {/* RE-COBRIR: pincel ocultar (círculos) por cima dos furos */}
+              {fog.brushHide.map((d, i) => (
+                <Circle
+                  key={`bh-${i}`}
+                  x={d.x}
+                  y={d.y}
+                  radius={d.r}
+                  fill="#05040a"
+                  globalCompositeOperation="source-over"
+                />
+              ))}
+            </Group>
           </Layer>
         )}
       </Stage>
