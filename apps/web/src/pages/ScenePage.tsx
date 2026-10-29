@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { SceneDTO, TokenDTO } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, FolderKind } from '@tabletop/shared';
 import { scenesApi } from '../lib/scenes.js';
 import { campaignsApi } from '../lib/campaigns.js';
 import { useAuth } from '../store/auth.js';
 import { MapEditor } from '../components/MapEditor.js';
 import { DicePanel } from '../components/DicePanel.js';
 import { CombatTracker } from '../components/CombatTracker.js';
+import { LibraryPanel } from '../components/LibraryPanel.js';
 import { useRealtimeScene } from '../hooks/useRealtimeScene.js';
 
 export function ScenePage() {
@@ -71,15 +72,20 @@ export function ScenePage() {
     })();
   }, [campaignId, user?.id, loadScene]);
 
-  async function createScene() {
+  async function createScene(folderId: string | null = null) {
     const name = prompt('Nome da cena:', 'Nova cena');
     if (!name) return;
-    const scene = await scenesApi.create(campaignId, { name, gridType: 'SQUARE', gridSize: 70 });
+    const scene = await scenesApi.create(campaignId, {
+      name,
+      gridType: 'SQUARE',
+      gridSize: 70,
+      ...(folderId ? { folderId } : {}),
+    });
     setScenes((s) => [...s, scene]);
     await loadScene(scene.id);
   }
 
-  async function addToken() {
+  async function addToken(folderId: string | null = null) {
     if (!current) return;
     const name = prompt('Nome do token:', 'Token');
     if (!name) return;
@@ -89,8 +95,27 @@ export function ScenePage() {
       y: 70,
       width: 70,
       height: 70,
+      ...(folderId ? { folderId } : {}),
     });
     setCurrent((c) => (c ? { ...c, tokens: [...c.tokens, token] } : c));
+  }
+
+  async function deleteScene(sceneId: string) {
+    if (!confirm('Excluir esta cena e tudo nela?')) return;
+    await scenesApi.remove(campaignId, sceneId);
+    setScenes((s) => s.filter((x) => x.id !== sceneId));
+    setCurrent((c) => (c && c.scene.id === sceneId ? null : c));
+  }
+
+  async function deleteToken(tokenId: string) {
+    if (!current) return;
+    await scenesApi.removeToken(campaignId, current.scene.id, tokenId);
+    setCurrent((c) => (c ? { ...c, tokens: c.tokens.filter((t) => t.id !== tokenId) } : c));
+  }
+
+  function importImage(kind: FolderKind, folderId: string | null) {
+    // Ligado ao upload no próximo bloco. Por ora, sinaliza o que ainda falta.
+    alert(`Upload de imagem (${kind}) chega no próximo passo. Pasta destino: ${folderId ?? 'raiz'}.`);
   }
 
   // Movimento/transform agora vão pelo SOCKET: o servidor valida e re-emite o
@@ -121,26 +146,10 @@ export function ScenePage() {
   }
 
   return (
-    <main className="container" style={{ maxWidth: 1200 }}>
+    <main className="container" style={{ maxWidth: 1280 }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <Link to={`/campaigns/${campaignId}`} className="badge">← Campanha</Link>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {scenes.map((s) => (
-            <button
-              key={s.id}
-              className={`btn ${current?.scene.id === s.id ? '' : 'ghost'}`}
-              onClick={() => loadScene(s.id)}
-            >
-              {s.name}
-            </button>
-          ))}
-        </div>
-        {isGm && (
-          <>
-            <button className="btn ghost" onClick={createScene}>+ Cena</button>
-            {current && <button className="btn ghost" onClick={addToken}>+ Token</button>}
-          </>
-        )}
+        <strong style={{ fontSize: 15 }}>{current?.scene.name ?? 'Sem cena'}</strong>
         <label style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
           <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
           <span className="muted">snapping à grade</span>
@@ -162,7 +171,21 @@ export function ScenePage() {
         </div>
       )}
 
-      <div style={{ marginTop: 14 }}>
+      <div className="scene-workspace">
+        <LibraryPanel
+          campaignId={campaignId}
+          isGm={isGm}
+          scenes={scenes}
+          tokens={current?.tokens ?? []}
+          currentSceneId={current?.scene.id}
+          onOpenScene={loadScene}
+          onCreateScene={createScene}
+          onDeleteScene={deleteScene}
+          onCreateToken={addToken}
+          onDeleteToken={deleteToken}
+          onImport={importImage}
+        />
+
         <div className="scene-map">
           {current ? (
             <MapEditor
@@ -175,7 +198,7 @@ export function ScenePage() {
           ) : (
             <div className="card">
               <p className="muted" style={{ margin: 0 }}>
-                {isGm ? 'Nenhuma cena ainda. Clique em “+ Cena”.' : 'O mestre ainda não criou uma cena.'}
+                {isGm ? 'Nenhuma cena aberta. Use a biblioteca à esquerda para criar ou abrir uma cena.' : 'O mestre ainda não criou uma cena.'}
               </p>
             </div>
           )}
