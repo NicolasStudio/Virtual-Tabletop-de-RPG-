@@ -295,28 +295,37 @@ export function ScenePage() {
         onChange={onFilePicked}
       />
       {uploading && <div className="badge" style={{ marginBottom: 8 }}>Enviando imagem…</div>}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Link to={`/campaigns/${campaignId}`} className="badge">← Campanha</Link>
-        <strong style={{ fontSize: 15 }}>{current?.scene.name ?? 'Sem cena'}</strong>
-        <label style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-          <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
-          <span className="muted">snapping à grade</span>
-        </label>
-        {isGm && (
-          <button className="btn" onClick={() => setLibOpen((v) => !v)} aria-expanded={libOpen} title="Biblioteca de cenas, mapas, tokens e itens">
-            📚 Biblioteca
-          </button>
-        )}
-        <button className="btn" onClick={() => setDiceOpen((v) => !v)} aria-expanded={diceOpen}>
-          🎲 Dados
-        </button>
-        <button className="btn" onClick={() => setCombatOpen((v) => !v)} aria-expanded={combatOpen}>
-          ⚔ Combate
-        </button>
-        <span className={`badge ${connected ? 'ok' : 'err'}`} title="Sincronização em tempo real">
-          {connected ? `● ao vivo (${online.length})` : '○ reconectando'}
+      <header className="scene-toolbar">
+        <Link to={`/campaigns/${campaignId}`} className="stb-back" title="Voltar à campanha">
+          <span aria-hidden>←</span> Campanha
+        </Link>
+        <h1 className="stb-title" title={current?.scene.name ?? ''}>
+          {current?.scene.name ?? 'Sem cena'}
+        </h1>
+
+        <span className={`stb-live ${connected ? 'on' : 'off'}`} title="Sincronização em tempo real">
+          <span className="stb-dot" />
+          {connected ? `ao vivo · ${online.length}` : 'reconectando'}
         </span>
-      </div>
+
+        <div className="stb-actions">
+          <label className="stb-snap" title="Encaixar tokens na grade">
+            <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
+            <span>snap à grade</span>
+          </label>
+          {isGm && (
+            <button className="btn ghost" onClick={() => setLibOpen((v) => !v)} aria-expanded={libOpen} title="Biblioteca de cenas, mapas, tokens e itens">
+              📚 Biblioteca
+            </button>
+          )}
+          <button className="btn ghost" onClick={() => setDiceOpen((v) => !v)} aria-expanded={diceOpen}>
+            🎲 Dados
+          </button>
+          <button className="btn ghost" onClick={() => setCombatOpen((v) => !v)} aria-expanded={combatOpen}>
+            ⚔ Combate
+          </button>
+        </div>
+      </header>
 
       {online.length > 0 && (
         <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
