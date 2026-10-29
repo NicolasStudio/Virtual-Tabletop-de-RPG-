@@ -5,6 +5,19 @@ export type CampaignRole = 'GM' | 'PLAYER' | 'SPECTATOR';
 export type GridType = 'SQUARE' | 'HEX' | 'NONE';
 export type RollVisibility = 'PUBLIC' | 'GM' | 'PRIVATE';
 
+// Organização em pastas (biblioteca da campanha)
+export type FolderKind = 'SCENE' | 'MAP' | 'TOKEN' | 'ITEM';
+export type TokenKind = 'CHARACTER' | 'MONSTER' | 'NPC' | 'ITEM';
+
+export interface AssetFolderDTO {
+  id: string;
+  campaignId: string;
+  kind: FolderKind;
+  name: string;
+  parentId?: string | null;
+  order: number;
+}
+
 export interface PublicUser {
   id: string;
   email: string;
@@ -25,6 +38,7 @@ export interface CampaignSummary {
 export interface SceneDTO {
   id: string;
   campaignId: string;
+  folderId?: string | null;
   name: string;
   backgroundAssetId?: string | null;
   width: number;
@@ -38,10 +52,13 @@ export interface SceneDTO {
 export interface TokenDTO {
   id: string;
   sceneId: string;
+  folderId?: string | null;
+  kind?: TokenKind;
   characterId?: string | null;
   ownerUserId?: string | null;
   name: string;
   imageAssetId?: string | null;
+  imageUrl?: string | null;
   x: number;
   y: number;
   width: number;

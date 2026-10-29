@@ -83,6 +83,7 @@ model Campaign {
   owner       User             @relation("CampaignOwner", fields: [ownerId], references: [id])
   members     CampaignMember[]
   invites     InviteCode[]
+  folders     AssetFolder[]
   scenes      Scene[]
   characters  Character[]
   chatMessages ChatMessage[]
@@ -123,6 +124,41 @@ model InviteCode {
 }
 
 // ---------------------------------------------------------------------------
+// Organização em pastas (biblioteca da campanha)
+// ---------------------------------------------------------------------------
+
+// Que tipo de conteúdo uma pasta agrupa. Mantido como string-enum para o front
+// poder exibir ícones/rótulos distintos (Cenas, Mapas, Tokens, Itens).
+enum FolderKind {
+  SCENE   // cenas (cenário + grade)
+  MAP     // mapas-overlay reutilizáveis
+  TOKEN   // tokens: personagens, monstros, npcs
+  ITEM    // itens / drops
+}
+
+// Pasta da biblioteca da campanha. parentId permite subpastas
+// (ex.: Tokens → Monstros). O escopo é sempre uma campanha.
+model AssetFolder {
+  id         String     @id @default(cuid())
+  campaignId String
+  kind       FolderKind
+  name       String
+  parentId   String?    // null = pasta raiz do seu kind
+  order      Int        @default(0)
+  createdAt  DateTime   @default(now())
+
+  campaign   Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  parent     AssetFolder? @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children   AssetFolder[] @relation("FolderTree")
+  scenes     Scene[]
+  tokens     Token[]
+  assets     Asset[]
+
+  @@index([campaignId, kind])
+  @@index([parentId])
+}
+
+// ---------------------------------------------------------------------------
 // Mapas / cenas
 // ---------------------------------------------------------------------------
 
@@ -135,6 +171,7 @@ enum GridType {
 model Scene {
   id          String   @id @default(cuid())
   campaignId  String
+  folderId    String?  // pasta de organização (kind=SCENE)
   name        String
   backgroundAssetId String?
   width       Int      @default(1920) // px da cena
@@ -148,17 +185,21 @@ model Scene {
   updatedAt   DateTime @updatedAt
 
   campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  folder      AssetFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   tokens      Token[]
   fogRegions  FogRegion[]
 
   @@index([campaignId])
+  @@index([folderId])
 }
 
 model Asset {
   id         String   @id @default(cuid())
   campaignId String
+  folderId   String?  // pasta de organização na biblioteca
   uploaderId String?
   kind       String   // "image" | "audio" | "handout" | ...
+  category   String?  // classificação de uso: "scene" | "map" | "token" | "item"
   fileName   String
   mimeType   String
   sizeBytes  Int
@@ -166,21 +207,35 @@ model Asset {
   createdAt  DateTime @default(now())
 
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  folder     AssetFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@index([campaignId])
+  @@index([folderId])
 }
 
 // ---------------------------------------------------------------------------
 // Tokens
 // ---------------------------------------------------------------------------
 
+// Subtipo de um token, usado para os subgrupos da biblioteca
+// (Personagens / Monstros / NPCs / Itens-drop).
+enum TokenKind {
+  CHARACTER
+  MONSTER
+  NPC
+  ITEM
+}
+
 model Token {
   id          String   @id @default(cuid())
   sceneId     String
+  folderId    String?  // pasta de organização (kind=TOKEN/ITEM)
+  kind        TokenKind @default(CHARACTER)
   characterId String?  // vínculo opcional com uma ficha
   ownerUserId String?  // quem controla este token (null = só GM)
   name        String
   imageAssetId String?
+  imageUrl    String?  // URL direta da imagem (cache do asset para render rápido)
   x           Float    @default(0)
   y           Float    @default(0)
   width       Float    @default(70)
@@ -196,6 +251,7 @@ model Token {
   updatedAt   DateTime @updatedAt
 
   scene       Scene      @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  folder      AssetFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   character   Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
 
   @@index([sceneId])

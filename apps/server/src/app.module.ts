@@ -7,6 +7,7 @@ import { HealthController } from './health.controller.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CampaignsModule } from './campaigns/campaigns.module.js';
 import { ScenesModule } from './scenes/scenes.module.js';
+import { FoldersModule } from './folders/folders.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { CombatModule } from './combat/combat.module.js';
 
@@ -19,6 +20,7 @@ import { CombatModule } from './combat/combat.module.js';
     AuthModule,
     CampaignsModule,
     ScenesModule,
+    FoldersModule,
     RealtimeModule,
     CombatModule,
     // Próximos por fase: CharactersModule (fichas), BestiaryModule, ...

@@ -6,6 +6,7 @@ function toSceneDTO(s: any): SceneDTO {
   return {
     id: s.id,
     campaignId: s.campaignId,
+    folderId: s.folderId ?? null,
     name: s.name,
     backgroundAssetId: s.backgroundAssetId,
     width: s.width,
@@ -21,10 +22,13 @@ function toTokenDTO(t: any): TokenDTO {
   return {
     id: t.id,
     sceneId: t.sceneId,
+    folderId: t.folderId ?? null,
+    kind: t.kind,
     characterId: t.characterId,
     ownerUserId: t.ownerUserId,
     name: t.name,
     imageAssetId: t.imageAssetId,
+    imageUrl: t.imageUrl ?? null,
     x: t.x,
     y: t.y,
     width: t.width,

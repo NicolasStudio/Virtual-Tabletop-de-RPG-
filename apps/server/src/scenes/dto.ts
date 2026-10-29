@@ -14,6 +14,7 @@ const GRID = ['SQUARE', 'HEX', 'NONE'] as const;
 
 export class CreateSceneDto {
   @IsString() @MinLength(1) @MaxLength(120) name!: string;
+  @IsOptional() @IsString() folderId?: string | null;
   @IsOptional() @IsInt() @Min(100) width?: number;
   @IsOptional() @IsInt() @Min(100) height?: number;
   @IsOptional() @IsIn(GRID) gridType?: (typeof GRID)[number];
@@ -25,6 +26,7 @@ export class CreateSceneDto {
 
 export class UpdateSceneDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(120) name?: string;
+  @IsOptional() @IsString() folderId?: string | null;
   @IsOptional() @IsInt() @Min(100) width?: number;
   @IsOptional() @IsInt() @Min(100) height?: number;
   @IsOptional() @IsIn(GRID) gridType?: (typeof GRID)[number];
@@ -36,11 +38,14 @@ export class UpdateSceneDto {
 
 export class CreateTokenDto {
   @IsString() @MinLength(1) @MaxLength(120) name!: string;
+  @IsOptional() @IsString() folderId?: string | null;
+  @IsOptional() @IsIn(['CHARACTER', 'MONSTER', 'NPC', 'ITEM']) kind?: 'CHARACTER' | 'MONSTER' | 'NPC' | 'ITEM';
   @IsOptional() @IsNumber() x?: number;
   @IsOptional() @IsNumber() y?: number;
   @IsOptional() @IsNumber() @Min(1) width?: number;
   @IsOptional() @IsNumber() @Min(1) height?: number;
   @IsOptional() @IsString() imageAssetId?: string;
+  @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() characterId?: string;
   @IsOptional() @IsString() ownerUserId?: string;
   @IsOptional() @IsString() layer?: string;
@@ -48,6 +53,8 @@ export class CreateTokenDto {
 
 export class UpdateTokenDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(120) name?: string;
+  @IsOptional() @IsString() folderId?: string | null;
+  @IsOptional() @IsIn(['CHARACTER', 'MONSTER', 'NPC', 'ITEM']) kind?: 'CHARACTER' | 'MONSTER' | 'NPC' | 'ITEM';
   @IsOptional() @IsNumber() x?: number;
   @IsOptional() @IsNumber() y?: number;
   @IsOptional() @IsNumber() @Min(1) width?: number;
@@ -56,5 +63,7 @@ export class UpdateTokenDto {
   @IsOptional() @IsBoolean() isLocked?: boolean;
   @IsOptional() @IsBoolean() isHidden?: boolean;
   @IsOptional() @IsString() layer?: string;
+  @IsOptional() @IsString() imageAssetId?: string;
+  @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() ownerUserId?: string;
 }
