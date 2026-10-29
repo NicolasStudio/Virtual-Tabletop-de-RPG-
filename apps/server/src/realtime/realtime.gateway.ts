@@ -230,6 +230,24 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.server.to(room(campaignId)).emit(SOCKET_EVENTS.COMBAT_UPDATE, { encounter });
   }
 
+  /** O GM ativou uma cena: todos os jogadores da sala devem segui-la. */
+  broadcastSceneActivate(campaignId: string, sceneId: string) {
+    this.server.to(room(campaignId)).emit(SOCKET_EVENTS.SCENE_ACTIVATE, { campaignId, sceneId });
+  }
+
+  /** Token criado/excluído na cena ativa. */
+  broadcastTokenCreate(campaignId: string, token: unknown) {
+    this.server.to(room(campaignId)).emit(SOCKET_EVENTS.TOKEN_CREATE, { token });
+  }
+  broadcastTokenDelete(campaignId: string, tokenId: string, sceneId: string) {
+    this.server.to(room(campaignId)).emit(SOCKET_EVENTS.TOKEN_DELETE, { tokenId, sceneId });
+  }
+
+  /** Mapa-overlay criado/alterado/removido. */
+  broadcastOverlay(campaignId: string, action: 'create' | 'update' | 'delete', overlay: unknown) {
+    this.server.to(room(campaignId)).emit(SOCKET_EVENTS.SCENE_UPDATE, { kind: 'overlay', action, overlay });
+  }
+
   private async broadcastPresence(campaignId: string) {
     const sockets = await this.server.in(room(campaignId)).fetchSockets();
     const seen = new Map<string, { userId: string }>();

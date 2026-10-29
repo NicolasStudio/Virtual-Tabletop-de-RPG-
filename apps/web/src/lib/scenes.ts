@@ -13,6 +13,9 @@ export const scenesApi = {
   remove: (campaignId: string, sceneId: string) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}`, { method: 'DELETE' }),
 
+  activate: (campaignId: string, sceneId: string) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/activate`, { method: 'POST' }) as Promise<{ ok: boolean; activeSceneId: string }>,
+
   createToken: (campaignId: string, sceneId: string, data: { name: string } & Partial<TokenDTO>) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}/tokens`, { method: 'POST', body: JSON.stringify(data) }) as Promise<TokenDTO>,
   updateToken: (campaignId: string, sceneId: string, tokenId: string, data: Partial<TokenDTO>) =>

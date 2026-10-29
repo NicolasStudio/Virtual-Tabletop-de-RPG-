@@ -28,8 +28,12 @@ export function ScenePage() {
   const loadScene = useCallback(
     async (sceneId: string) => {
       setCurrent(await scenesApi.get(campaignId, sceneId));
+      // GM que abre uma cena a torna a cena ATIVA que os jogadores acompanham
+      if (role === 'GM') {
+        void scenesApi.activate(campaignId, sceneId).catch(() => {});
+      }
     },
-    [campaignId],
+    [campaignId, role],
   );
 
   // aplica um token autoritativo vindo do servidor (socket)
@@ -53,21 +57,61 @@ export function ScenePage() {
     });
   }, [loadScene]);
 
+  // jogador segue a cena indicada pelo mestre (carrega sem re-ativar)
+  const followScene = useCallback(
+    async (sceneId: string) => {
+      setCurrent((c) => {
+        if (c?.scene.id === sceneId) return c; // já estou nela
+        void scenesApi.get(campaignId, sceneId).then(setCurrent).catch(() => {});
+        return c;
+      });
+    },
+    [campaignId],
+  );
+
   const { online, connected, sendMove, sendUpdate } = useRealtimeScene(
     campaignId,
     applyAuthoritativeToken,
     resync,
     (msg) => setError(msg),
+    {
+      // o jogador NÃO escolhe cena: segue a que o mestre ativar
+      onSceneActivate: (sceneId) => {
+        if (role !== 'GM') void followScene(sceneId);
+      },
+      onTokenCreate: (token) => applyAuthoritativeToken(token),
+      onTokenDelete: (tokenId) =>
+        setCurrent((c) => (c ? { ...c, tokens: c.tokens.filter((t) => t.id !== tokenId) } : c)),
+      onOverlay: (action, overlay) =>
+        setCurrent((c) => {
+          if (!c) return c;
+          if (action === 'delete') return { ...c, overlays: c.overlays.filter((o) => o.id !== overlay.id) };
+          const exists = c.overlays.some((o) => o.id === overlay.id);
+          return {
+            ...c,
+            overlays: exists
+              ? c.overlays.map((o) => (o.id === overlay.id ? { ...o, ...overlay } : o))
+              : [...c.overlays, overlay],
+          };
+        }),
+    },
   );
 
   useEffect(() => {
     (async () => {
       try {
         const detail = await campaignsApi.detail(campaignId);
-        setRole(detail.members.find((m) => m.userId === user?.id)?.role ?? 'PLAYER');
+        const myRole = detail.members.find((m) => m.userId === user?.id)?.role ?? 'PLAYER';
+        setRole(myRole);
         const list = await scenesApi.list(campaignId);
         setScenes(list);
-        if (list[0]) await loadScene(list[0].id);
+        // GM abre a 1ª cena (e a ativa); jogador abre a cena ATIVA da campanha
+        const activeId = detail.activeSceneId;
+        if (myRole !== 'GM' && activeId) {
+          setCurrent(await scenesApi.get(campaignId, activeId));
+        } else if (list[0]) {
+          await loadScene(list[0].id);
+        }
       } catch (e: any) {
         setError(e?.message ?? 'Falha ao carregar cenas.');
       }

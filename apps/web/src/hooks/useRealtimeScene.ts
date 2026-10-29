@@ -20,10 +20,19 @@ export function useRealtimeScene(
   onAuthoritativeToken: (token: TokenDTO) => void,
   onReconnect: () => void,
   onError: (msg: string) => void,
+  handlers?: {
+    onSceneActivate?: (sceneId: string) => void;
+    onTokenCreate?: (token: TokenDTO) => void;
+    onTokenDelete?: (tokenId: string) => void;
+    onOverlay?: (action: 'create' | 'update' | 'delete', overlay: any) => void;
+  },
 ) {
   const [online, setOnline] = useState<PresenceUser[]>([]);
   const [connected, setConnected] = useState(false);
   const firstConnect = useRef(true);
+  // guarda os handlers numa ref para não re-assinar os listeners a cada render
+  const hRef = useRef(handlers);
+  hRef.current = handlers;
 
   useEffect(() => {
     const socket = getSocket();
@@ -48,11 +57,27 @@ export function useRealtimeScene(
     function handleError(payload: { message?: string }) {
       if (payload?.message) onError(payload.message);
     }
+    function handleSceneActivate(payload: { campaignId: string; sceneId: string }) {
+      if (payload.campaignId === campaignId) hRef.current?.onSceneActivate?.(payload.sceneId);
+    }
+    function handleTokenCreate(payload: { token: TokenDTO }) {
+      hRef.current?.onTokenCreate?.(payload.token);
+    }
+    function handleTokenDelete(payload: { tokenId: string }) {
+      hRef.current?.onTokenDelete?.(payload.tokenId);
+    }
+    function handleSceneUpdate(payload: { kind: string; action: 'create' | 'update' | 'delete'; overlay: any }) {
+      if (payload.kind === 'overlay') hRef.current?.onOverlay?.(payload.action, payload.overlay);
+    }
 
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on(SOCKET_EVENTS.TOKEN_MOVE, handleToken);
     socket.on(SOCKET_EVENTS.TOKEN_UPDATE, handleToken);
+    socket.on(SOCKET_EVENTS.TOKEN_CREATE, handleTokenCreate);
+    socket.on(SOCKET_EVENTS.TOKEN_DELETE, handleTokenDelete);
+    socket.on(SOCKET_EVENTS.SCENE_ACTIVATE, handleSceneActivate);
+    socket.on(SOCKET_EVENTS.SCENE_UPDATE, handleSceneUpdate);
     socket.on(SOCKET_EVENTS.PRESENCE, handlePresence);
     socket.on(SOCKET_EVENTS.ERROR, handleError);
 
@@ -64,6 +89,10 @@ export function useRealtimeScene(
       socket.off('disconnect', handleDisconnect);
       socket.off(SOCKET_EVENTS.TOKEN_MOVE, handleToken);
       socket.off(SOCKET_EVENTS.TOKEN_UPDATE, handleToken);
+      socket.off(SOCKET_EVENTS.TOKEN_CREATE, handleTokenCreate);
+      socket.off(SOCKET_EVENTS.TOKEN_DELETE, handleTokenDelete);
+      socket.off(SOCKET_EVENTS.SCENE_ACTIVATE, handleSceneActivate);
+      socket.off(SOCKET_EVENTS.SCENE_UPDATE, handleSceneUpdate);
       socket.off(SOCKET_EVENTS.PRESENCE, handlePresence);
       socket.off(SOCKET_EVENTS.ERROR, handleError);
     };

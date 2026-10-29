@@ -3,9 +3,11 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
+  forwardRef,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -15,6 +17,7 @@ import { RequireRole } from '../campaigns/require-role.decorator.js';
 import { CampaignMembership } from '../campaigns/membership.decorator.js';
 import type { CampaignRole } from '@tabletop/shared';
 import { ScenesService } from './scenes.service.js';
+import { RealtimeGateway } from '../realtime/realtime.gateway.js';
 import {
   CreateSceneDto,
   UpdateSceneDto,
@@ -29,7 +32,11 @@ import {
 @Controller('campaigns/:campaignId/scenes')
 @UseGuards(JwtAuthGuard, CampaignRoleGuard)
 export class ScenesController {
-  constructor(private readonly scenes: ScenesService) {}
+  constructor(
+    private readonly scenes: ScenesService,
+    @Inject(forwardRef(() => RealtimeGateway))
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   @Get()
   list(@Param('campaignId') campaignId: string) {
@@ -68,16 +75,27 @@ export class ScenesController {
     return this.scenes.remove(campaignId, sceneId);
   }
 
+  // GM ativa uma cena -> os jogadores da sala passam a acompanhá-la ao vivo
+  @Post(':sceneId/activate')
+  @RequireRole('GM')
+  async activate(@Param('campaignId') campaignId: string, @Param('sceneId') sceneId: string) {
+    const r = await this.scenes.activateScene(campaignId, sceneId);
+    this.realtime.broadcastSceneActivate(campaignId, sceneId);
+    return r;
+  }
+
   // -------- tokens --------
 
   @Post(':sceneId/tokens')
   @RequireRole('GM')
-  createToken(
+  async createToken(
     @Param('campaignId') campaignId: string,
     @Param('sceneId') sceneId: string,
     @Body() dto: CreateTokenDto,
   ) {
-    return this.scenes.createToken(campaignId, sceneId, dto);
+    const token = await this.scenes.createToken(campaignId, sceneId, dto);
+    this.realtime.broadcastTokenCreate(campaignId, token);
+    return token;
   }
 
   // mover/atualizar token: membership basta; propriedade é checada no service
@@ -93,12 +111,15 @@ export class ScenesController {
   }
 
   @Delete(':sceneId/tokens/:tokenId')
-  removeToken(
+  async removeToken(
     @Param('campaignId') campaignId: string,
+    @Param('sceneId') sceneId: string,
     @Param('tokenId') tokenId: string,
     @CampaignMembership('role') role: CampaignRole,
   ) {
-    return this.scenes.removeToken(campaignId, tokenId, role);
+    const r = await this.scenes.removeToken(campaignId, tokenId, role);
+    this.realtime.broadcastTokenDelete(campaignId, tokenId, sceneId);
+    return r;
   }
 
   // -------- mapas-overlay --------
@@ -110,27 +131,33 @@ export class ScenesController {
 
   @Post(':sceneId/overlays')
   @RequireRole('GM')
-  createOverlay(
+  async createOverlay(
     @Param('campaignId') campaignId: string,
     @Param('sceneId') sceneId: string,
     @Body() dto: CreateMapOverlayDto,
   ) {
-    return this.scenes.createOverlay(campaignId, sceneId, dto);
+    const overlay = await this.scenes.createOverlay(campaignId, sceneId, dto);
+    this.realtime.broadcastOverlay(campaignId, 'create', overlay);
+    return overlay;
   }
 
   @Patch(':sceneId/overlays/:overlayId')
   @RequireRole('GM')
-  updateOverlay(
+  async updateOverlay(
     @Param('campaignId') campaignId: string,
     @Param('overlayId') overlayId: string,
     @Body() dto: UpdateMapOverlayDto,
   ) {
-    return this.scenes.updateOverlay(campaignId, overlayId, dto);
+    const overlay = await this.scenes.updateOverlay(campaignId, overlayId, dto);
+    this.realtime.broadcastOverlay(campaignId, 'update', overlay);
+    return overlay;
   }
 
   @Delete(':sceneId/overlays/:overlayId')
   @RequireRole('GM')
-  removeOverlay(@Param('campaignId') campaignId: string, @Param('overlayId') overlayId: string) {
-    return this.scenes.removeOverlay(campaignId, overlayId);
+  async removeOverlay(@Param('campaignId') campaignId: string, @Param('overlayId') overlayId: string) {
+    const r = await this.scenes.removeOverlay(campaignId, overlayId);
+    this.realtime.broadcastOverlay(campaignId, 'delete', { id: overlayId });
+    return r;
   }
 }

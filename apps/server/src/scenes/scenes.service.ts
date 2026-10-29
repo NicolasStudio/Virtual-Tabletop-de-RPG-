@@ -179,6 +179,18 @@ export class ScenesService {
     return { ok: true };
   }
 
+  // marca a cena ativa da campanha (a que os jogadores acompanham)
+  async activateScene(campaignId: string, sceneId: string) {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    await this.prisma.campaign.update({ where: { id: campaignId }, data: { activeSceneId: sceneId } });
+    return { ok: true, activeSceneId: sceneId };
+  }
+
+  async getActiveSceneId(campaignId: string): Promise<string | null> {
+    const c = await this.prisma.campaign.findUnique({ where: { id: campaignId }, select: { activeSceneId: true } });
+    return c?.activeSceneId ?? null;
+  }
+
   // -------- tokens --------
 
   async createToken(campaignId: string, sceneId: string, data: any): Promise<TokenDTO> {
