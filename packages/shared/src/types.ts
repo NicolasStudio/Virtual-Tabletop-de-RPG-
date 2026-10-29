@@ -40,6 +40,7 @@ export interface MapOverlayDTO {  id: string;
 // apenas enabled + as células reveladas (nunca o que está oculto além disso).
 export interface SceneFogDTO {
   enabled: boolean;
+  coverAll: boolean; // névoa cobre toda a cena (Ocultar tudo)
   revealedCells: string[]; // "col,row"
   brushReveal: FogBrushDot[]; // círculos revelados à mão livre
   brushHide: FogBrushDot[];   // círculos ocultados à mão livre

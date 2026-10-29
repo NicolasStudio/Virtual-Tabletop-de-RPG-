@@ -54,6 +54,8 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
   const background = useHtmlImage(scene.backgroundUrl ? assetUrl(scene.backgroundUrl) : null);
   const painting = useRef(false);
+  const brushBuffer = useRef<{ x: number; y: number; r: number }[]>([]);
+  const cellBuffer = useRef<Set<string>>(new Set());
 
   const gs = scene.gridSize > 0 ? scene.gridSize : 70;
   const cols = Math.ceil(scene.width / gs);
@@ -87,10 +89,24 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
     if (!fogPaintMode) return;
     if (fogBrush) {
       const pt = pointInScene();
-      if (pt) onFogBrush([{ x: pt.x, y: pt.y, r: brushSize }], fogPaintMode);
+      if (pt) brushBuffer.current.push({ x: pt.x, y: pt.y, r: brushSize });
     } else {
       const cell = cellAtPointer();
-      if (cell) onFogPaint([cell], fogPaintMode);
+      if (cell) cellBuffer.current.add(cell);
+    }
+  }
+
+  // envia o traço acumulado de uma vez (evita flood de requisições / rate-limit)
+  function flushPaint() {
+    if (!fogPaintMode) return;
+    if (fogBrush) {
+      const dots = brushBuffer.current;
+      brushBuffer.current = [];
+      if (dots.length) onFogBrush(dots, fogPaintMode);
+    } else {
+      const cells = [...cellBuffer.current];
+      cellBuffer.current = new Set();
+      if (cells.length) onFogPaint(cells, fogPaintMode);
     }
   }
 
@@ -143,6 +159,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
           if (fogPaintMode && painting.current) paintAtPointer();
         }}
         onMouseUp={() => {
+          if (painting.current) flushPaint();
           painting.current = false;
         }}
         style={{ background: '#0f0c08', borderRadius: 8, cursor: fogPaintMode ? 'crosshair' : 'grab' }}
@@ -197,8 +214,12 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         {fog.enabled && (
           <Layer listening={false}>
             <Group opacity={isGm ? 0.5 : 1}>
-              {/* névoa plena cobrindo a cena */}
-              <Rect width={scene.width} height={scene.height} fill="#05040a" />
+              {/* base: só cobre tudo quando 'Ocultar tudo' (coverAll) */}
+              {fog.coverAll && <Rect width={scene.width} height={scene.height} fill="#05040a" />}
+              {/* névoa desenhada à mão (brushHide): adiciona névoa onde o GM pintou */}
+              {fog.brushHide.map((d, i) => (
+                <Circle key={`bh-${i}`} x={d.x} y={d.y} radius={d.r} fill="#05040a" />
+              ))}
               {/* FUROS (destination-out): células reveladas */}
               {[...revealed].map((key) => {
                 const [col, row] = key.split(',').map(Number);
@@ -214,7 +235,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
                   />
                 );
               })}
-              {/* FUROS: pincel revelar (círculos) */}
+              {/* FUROS: pincel revelar */}
               {fog.brushReveal.map((d, i) => (
                 <Circle
                   key={`br-${i}`}
@@ -223,17 +244,6 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
                   radius={d.r}
                   fill="#000"
                   globalCompositeOperation="destination-out"
-                />
-              ))}
-              {/* RE-COBRIR: pincel ocultar (círculos) por cima dos furos */}
-              {fog.brushHide.map((d, i) => (
-                <Circle
-                  key={`bh-${i}`}
-                  x={d.x}
-                  y={d.y}
-                  radius={d.r}
-                  fill="#05040a"
-                  globalCompositeOperation="source-over"
                 />
               ))}
             </Group>

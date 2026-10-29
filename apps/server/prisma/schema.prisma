@@ -309,6 +309,7 @@ model SceneFog {
   id            String   @id @default(cuid())
   sceneId       String   @unique
   enabled       Boolean  @default(false)
+  coverAll      Boolean  @default(false) // true = névoa cobre toda a cena (Ocultar tudo); false = só onde o GM pintou
   revealedCells Json     @default("[]")
   brushReveal   Json     @default("[]")  // círculos revelados à mão livre: [{x,y,r}]
   brushHide     Json     @default("[]")  // círculos ocultados à mão livre: [{x,y,r}]

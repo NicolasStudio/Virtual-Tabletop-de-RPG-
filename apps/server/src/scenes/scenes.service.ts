@@ -5,6 +5,7 @@ import type { CampaignRole, SceneDTO, TokenDTO, MapOverlayDTO, SceneFogDTO } fro
 function toFogDTO(f: any): SceneFogDTO {
   return {
     enabled: !!f?.enabled,
+    coverAll: !!f?.coverAll,
     revealedCells: Array.isArray(f?.revealedCells) ? f.revealedCells : [],
     brushReveal: Array.isArray(f?.brushReveal) ? f.brushReveal : [],
     brushHide: Array.isArray(f?.brushHide) ? f.brushHide : [],
@@ -132,11 +133,12 @@ export class ScenesService {
 
   private async upsertFog(
     sceneId: string,
-    data: { enabled?: boolean; revealedCells?: string[]; brushReveal?: any[]; brushHide?: any[] },
+    data: { enabled?: boolean; coverAll?: boolean; revealedCells?: string[]; brushReveal?: any[]; brushHide?: any[] },
   ) {
     const existing = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
     const patch: any = {};
     if (data.enabled !== undefined) patch.enabled = data.enabled;
+    if (data.coverAll !== undefined) patch.coverAll = data.coverAll;
     if (data.revealedCells !== undefined) patch.revealedCells = data.revealedCells;
     if (data.brushReveal !== undefined) patch.brushReveal = data.brushReveal;
     if (data.brushHide !== undefined) patch.brushHide = data.brushHide;
@@ -146,6 +148,7 @@ export class ScenesService {
           data: {
             sceneId,
             enabled: data.enabled ?? false,
+            coverAll: data.coverAll ?? false,
             revealedCells: data.revealedCells ?? [],
             brushReveal: data.brushReveal ?? [],
             brushHide: data.brushHide ?? [],
@@ -211,8 +214,8 @@ export class ScenesService {
     await this.assertSceneInCampaign(campaignId, sceneId);
     // revelar tudo = lista vazia + enabled false (sem névoa); ocultar tudo = enabled true, nada revelado
     return revealAll
-      ? this.upsertFog(sceneId, { enabled: false, revealedCells: [], brushReveal: [], brushHide: [] })
-      : this.upsertFog(sceneId, { enabled: true, revealedCells: [], brushReveal: [], brushHide: [] });
+      ? this.upsertFog(sceneId, { enabled: false, coverAll: false, revealedCells: [], brushReveal: [], brushHide: [] })
+      : this.upsertFog(sceneId, { enabled: true, coverAll: true, revealedCells: [], brushReveal: [], brushHide: [] });
   }
 
   // -------- mapas-overlay (só GM muta; render entre fundo e tokens) --------
