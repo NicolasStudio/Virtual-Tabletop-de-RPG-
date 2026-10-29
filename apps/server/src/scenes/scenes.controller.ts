@@ -160,4 +160,47 @@ export class ScenesController {
     this.realtime.broadcastOverlay(campaignId, 'delete', { id: overlayId });
     return r;
   }
+
+  // -------- névoa de guerra (modelo A, por células) --------
+
+  @Get(':sceneId/fog')
+  getFog(@Param('campaignId') campaignId: string, @Param('sceneId') sceneId: string) {
+    return this.scenes.getFog(campaignId, sceneId);
+  }
+
+  @Post(':sceneId/fog/enabled')
+  @RequireRole('GM')
+  async setFogEnabled(
+    @Param('campaignId') campaignId: string,
+    @Param('sceneId') sceneId: string,
+    @Body() dto: { enabled: boolean },
+  ) {
+    const fog = await this.scenes.setFogEnabled(campaignId, sceneId, !!dto.enabled);
+    this.realtime.broadcastFog(campaignId, sceneId, fog);
+    return fog;
+  }
+
+  @Post(':sceneId/fog/paint')
+  @RequireRole('GM')
+  async paintFog(
+    @Param('campaignId') campaignId: string,
+    @Param('sceneId') sceneId: string,
+    @Body() dto: { cells: string[]; mode: 'reveal' | 'hide' },
+  ) {
+    const fog = await this.scenes.paintFog(campaignId, sceneId, dto.cells ?? [], dto.mode === 'hide' ? 'hide' : 'reveal');
+    this.realtime.broadcastFog(campaignId, sceneId, fog);
+    return fog;
+  }
+
+  @Post(':sceneId/fog/reset')
+  @RequireRole('GM')
+  async resetFog(
+    @Param('campaignId') campaignId: string,
+    @Param('sceneId') sceneId: string,
+    @Body() dto: { revealAll: boolean },
+  ) {
+    const fog = await this.scenes.resetFog(campaignId, sceneId, !!dto.revealAll);
+    this.realtime.broadcastFog(campaignId, sceneId, fog);
+    return fog;
+  }
 }

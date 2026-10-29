@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import type { SceneDTO, TokenDTO, MapOverlayDTO } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, MapOverlayDTO, SceneFogDTO } from '@tabletop/shared';
 
 export const scenesApi = {
   list: (campaignId: string) =>
@@ -7,7 +7,7 @@ export const scenesApi = {
   create: (campaignId: string, data: Partial<SceneDTO> & { name: string }) =>
     api(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }) as Promise<SceneDTO>,
   get: (campaignId: string, sceneId: string) =>
-    api(`/campaigns/${campaignId}/scenes/${sceneId}`) as Promise<{ scene: SceneDTO; tokens: TokenDTO[]; overlays: MapOverlayDTO[] }>,
+    api(`/campaigns/${campaignId}/scenes/${sceneId}`) as Promise<{ scene: SceneDTO; tokens: TokenDTO[]; overlays: MapOverlayDTO[]; fog: SceneFogDTO }>,
   update: (campaignId: string, sceneId: string, data: Partial<SceneDTO>) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<SceneDTO>,
   remove: (campaignId: string, sceneId: string) =>
@@ -30,6 +30,16 @@ export const scenesApi = {
     api(`/campaigns/${campaignId}/scenes/${sceneId}/overlays/${overlayId}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<MapOverlayDTO>,
   removeOverlay: (campaignId: string, sceneId: string, overlayId: string) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}/overlays/${overlayId}`, { method: 'DELETE' }),
+
+  // névoa de guerra (modelo A, por células) — só GM muta
+  getFog: (campaignId: string, sceneId: string) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/fog`) as Promise<SceneFogDTO>,
+  setFogEnabled: (campaignId: string, sceneId: string, enabled: boolean) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/fog/enabled`, { method: 'POST', body: JSON.stringify({ enabled }) }) as Promise<SceneFogDTO>,
+  paintFog: (campaignId: string, sceneId: string, cells: string[], mode: 'reveal' | 'hide') =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/fog/paint`, { method: 'POST', body: JSON.stringify({ cells, mode }) }) as Promise<SceneFogDTO>,
+  resetFog: (campaignId: string, sceneId: string, revealAll: boolean) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/fog/reset`, { method: 'POST', body: JSON.stringify({ revealAll }) }) as Promise<SceneFogDTO>,
 };
 
 // snapping à grade (quadrada). Devolve o canto superior-esquerdo encaixado.

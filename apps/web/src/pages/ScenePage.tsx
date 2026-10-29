@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { SceneDTO, TokenDTO, FolderKind, TokenKind, MapOverlayDTO } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, FolderKind, TokenKind, MapOverlayDTO, SceneFogDTO } from '@tabletop/shared';
 import { scenesApi } from '../lib/scenes.js';
 import { campaignsApi } from '../lib/campaigns.js';
 import { uploadAsset, assetUrl, nameFromFileName } from '../lib/assets.js';
@@ -15,12 +15,13 @@ export function ScenePage() {
   const { campaignId = '' } = useParams();
   const { user } = useAuth();
   const [scenes, setScenes] = useState<SceneDTO[]>([]);
-  const [current, setCurrent] = useState<{ scene: SceneDTO; tokens: TokenDTO[]; overlays: MapOverlayDTO[] } | null>(null);
+  const [current, setCurrent] = useState<{ scene: SceneDTO; tokens: TokenDTO[]; overlays: MapOverlayDTO[]; fog: SceneFogDTO } | null>(null);
   const [role, setRole] = useState<string>('PLAYER');
   const [diceOpen, setDiceOpen] = useState(false);
   const [combatOpen, setCombatOpen] = useState(false);
   const [libOpen, setLibOpen] = useState(true);
   const [snap, setSnap] = useState(true);
+  const [fogMode, setFogMode] = useState<'reveal' | 'hide' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isGm = role === 'GM';
@@ -94,6 +95,8 @@ export function ScenePage() {
               : [...c.overlays, overlay],
           };
         }),
+      onFog: (sceneId, fog) =>
+        setCurrent((c) => (c && c.scene.id === sceneId ? { ...c, fog } : c)),
     },
   );
 
@@ -276,6 +279,35 @@ export function ScenePage() {
     setCurrent((c) => (c ? { ...c, overlays: c.overlays.filter((o) => o.id !== overlayId) } : c));
   }
 
+  // --- névoa de guerra (só GM) ---
+  function onFogPaint(cells: string[], mode: 'reveal' | 'hide') {
+    if (!current || !isGm) return;
+    // update otimista
+    setCurrent((c) => {
+      if (!c) return c;
+      const set = new Set(c.fog.revealedCells);
+      for (const cell of cells) mode === 'reveal' ? set.add(cell) : set.delete(cell);
+      return { ...c, fog: { enabled: true, revealedCells: [...set] } };
+    });
+    void scenesApi.paintFog(campaignId, current.scene.id, cells, mode).catch((e: any) =>
+      setError(e?.message ?? 'Falha ao pintar a névoa.'),
+    );
+  }
+
+  async function toggleFog() {
+    if (!current || !isGm) return;
+    const next = !current.fog.enabled;
+    setCurrent((c) => (c ? { ...c, fog: { ...c.fog, enabled: next } } : c));
+    if (!next) setFogMode(null);
+    await scenesApi.setFogEnabled(campaignId, current.scene.id, next).catch(() => {});
+  }
+
+  async function resetFog(revealAll: boolean) {
+    if (!current || !isGm) return;
+    const fog = await scenesApi.resetFog(campaignId, current.scene.id, revealAll);
+    setCurrent((c) => (c ? { ...c, fog } : c));
+  }
+
   if (error) {
     return (
       <main className="container">
@@ -324,6 +356,41 @@ export function ScenePage() {
           <button className="btn ghost" onClick={() => setCombatOpen((v) => !v)} aria-expanded={combatOpen}>
             ⚔ Combate
           </button>
+          {isGm && current && (
+            <div className="fog-controls">
+              <button
+                className={`btn ghost ${current.fog.enabled ? 'fog-on' : ''}`}
+                onClick={toggleFog}
+                title="Ligar/desligar a névoa de guerra nesta cena"
+              >
+                🌫️ Névoa {current.fog.enabled ? 'on' : 'off'}
+              </button>
+              {current.fog.enabled && (
+                <>
+                  <button
+                    className={`btn sm ${fogMode === 'reveal' ? '' : 'ghost'}`}
+                    onClick={() => setFogMode((m) => (m === 'reveal' ? null : 'reveal'))}
+                    title="Pincel: revelar células"
+                  >
+                    👁 Revelar
+                  </button>
+                  <button
+                    className={`btn sm ${fogMode === 'hide' ? '' : 'ghost'}`}
+                    onClick={() => setFogMode((m) => (m === 'hide' ? null : 'hide'))}
+                    title="Pincel: ocultar células"
+                  >
+                    🌑 Ocultar
+                  </button>
+                  <button className="btn ghost sm" onClick={() => resetFog(false)} title="Cobrir toda a cena de névoa">
+                    Ocultar tudo
+                  </button>
+                  <button className="btn ghost sm" onClick={() => resetFog(true)} title="Revelar toda a cena">
+                    Revelar tudo
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -364,6 +431,9 @@ export function ScenePage() {
               onTokenChange={onTokenChange}
               onOverlayChange={onOverlayChange}
               onOverlayDelete={deleteOverlay}
+              fog={current.fog}
+              fogPaintMode={isGm ? fogMode : null}
+              onFogPaint={onFogPaint}
             />
           ) : (
             <div className="card">

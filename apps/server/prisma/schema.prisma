@@ -188,6 +188,7 @@ model Scene {
   folder      AssetFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   tokens      Token[]
   fogRegions  FogRegion[]
+  fog         SceneFog?
   overlays    MapOverlay[]
 
   @@index([campaignId])
@@ -298,6 +299,19 @@ model FogRegion {
   scene     Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
 
   @@index([sceneId])
+}
+
+// Névoa de guerra por CÉLULAS (modelo A): um registro por cena.
+// revealedCells = lista de "col,row" reveladas. Quando enabled=true e uma
+// célula NÃO está revelada, ela é névoa (opaca para jogador, translúcida p/ GM).
+model SceneFog {
+  id            String   @id @default(cuid())
+  sceneId       String   @unique
+  enabled       Boolean  @default(false)
+  revealedCells Json     @default("[]")
+  updatedAt     DateTime @updatedAt
+
+  scene         Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
 }
 
 // ---------------------------------------------------------------------------

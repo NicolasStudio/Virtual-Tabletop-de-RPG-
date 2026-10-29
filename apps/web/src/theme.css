@@ -649,3 +649,19 @@ input[type='number'] {
   text-align: center;
   flex-shrink: 0;
 }
+
+
+/* controles de névoa de guerra na toolbar */
+.fog-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.fog-controls .fog-on {
+  border-color: #6db1e4 !important;
+  color: #6db1e4 !important;
+}

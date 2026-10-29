@@ -25,6 +25,7 @@ export function useRealtimeScene(
     onTokenCreate?: (token: TokenDTO) => void;
     onTokenDelete?: (tokenId: string) => void;
     onOverlay?: (action: 'create' | 'update' | 'delete', overlay: any) => void;
+    onFog?: (sceneId: string, fog: any) => void;
   },
 ) {
   const [online, setOnline] = useState<PresenceUser[]>([]);
@@ -69,6 +70,9 @@ export function useRealtimeScene(
     function handleSceneUpdate(payload: { kind: string; action: 'create' | 'update' | 'delete'; overlay: any }) {
       if (payload.kind === 'overlay') hRef.current?.onOverlay?.(payload.action, payload.overlay);
     }
+    function handleFog(payload: { sceneId: string; fog: any }) {
+      hRef.current?.onFog?.(payload.sceneId, payload.fog);
+    }
 
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
@@ -78,6 +82,7 @@ export function useRealtimeScene(
     socket.on(SOCKET_EVENTS.TOKEN_DELETE, handleTokenDelete);
     socket.on(SOCKET_EVENTS.SCENE_ACTIVATE, handleSceneActivate);
     socket.on(SOCKET_EVENTS.SCENE_UPDATE, handleSceneUpdate);
+    socket.on(SOCKET_EVENTS.FOG_UPDATE, handleFog);
     socket.on(SOCKET_EVENTS.PRESENCE, handlePresence);
     socket.on(SOCKET_EVENTS.ERROR, handleError);
 
@@ -93,6 +98,7 @@ export function useRealtimeScene(
       socket.off(SOCKET_EVENTS.TOKEN_DELETE, handleTokenDelete);
       socket.off(SOCKET_EVENTS.SCENE_ACTIVATE, handleSceneActivate);
       socket.off(SOCKET_EVENTS.SCENE_UPDATE, handleSceneUpdate);
+      socket.off(SOCKET_EVENTS.FOG_UPDATE, handleFog);
       socket.off(SOCKET_EVENTS.PRESENCE, handlePresence);
       socket.off(SOCKET_EVENTS.ERROR, handleError);
     };

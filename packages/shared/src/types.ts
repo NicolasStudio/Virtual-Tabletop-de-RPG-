@@ -19,8 +19,7 @@ export interface AssetFolderDTO {
 }
 
 // Mapa-overlay: imagem sobre a cena (cenário = fundo; mapa por cima, redimensionável pelo GM)
-export interface MapOverlayDTO {
-  id: string;
+export interface MapOverlayDTO {  id: string;
   sceneId: string;
   folderId?: string | null;
   assetId?: string | null;
@@ -34,6 +33,13 @@ export interface MapOverlayDTO {
   opacity: number;
   order: number;
   isLocked: boolean;
+}
+
+// Névoa de guerra por células (modelo A). Para o jogador, o servidor envia
+// apenas enabled + as células reveladas (nunca o que está oculto além disso).
+export interface SceneFogDTO {
+  enabled: boolean;
+  revealedCells: string[]; // "col,row"
 }
 
 export interface PublicUser {

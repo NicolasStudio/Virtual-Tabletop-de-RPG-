@@ -248,6 +248,11 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.server.to(room(campaignId)).emit(SOCKET_EVENTS.SCENE_UPDATE, { kind: 'overlay', action, overlay });
   }
 
+  /** Névoa de guerra atualizada numa cena. */
+  broadcastFog(campaignId: string, sceneId: string, fog: unknown) {
+    this.server.to(room(campaignId)).emit(SOCKET_EVENTS.FOG_UPDATE, { sceneId, fog });
+  }
+
   private async broadcastPresence(campaignId: string) {
     const sockets = await this.server.in(room(campaignId)).fetchSockets();
     const seen = new Map<string, { userId: string }>();

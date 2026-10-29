@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { CampaignRole, SceneDTO, TokenDTO, MapOverlayDTO } from '@tabletop/shared';
+import type { CampaignRole, SceneDTO, TokenDTO, MapOverlayDTO, SceneFogDTO } from '@tabletop/shared';
+
+function toFogDTO(f: any): SceneFogDTO {
+  return {
+    enabled: !!f?.enabled,
+    revealedCells: Array.isArray(f?.revealedCells) ? f.revealedCells : [],
+  };
+}
 
 function toOverlayDTO(o: any): MapOverlayDTO {
   return {
@@ -108,11 +115,72 @@ export class ScenesService {
       where: { sceneId },
       orderBy: { order: 'asc' },
     });
+    const fogRow = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
     return {
       scene: toSceneDTO(scene, bgUrl),
       tokens: visible.map(toTokenDTO),
       overlays: overlays.map(toOverlayDTO),
+      fog: toFogDTO(fogRow),
     };
+  }
+
+  // -------- névoa de guerra (modelo A, por células) — só GM muta --------
+
+  private async upsertFog(sceneId: string, data: { enabled?: boolean; revealedCells?: string[] }) {
+    const existing = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
+    const row = existing
+      ? await this.prisma.sceneFog.update({
+          where: { sceneId },
+          data: {
+            ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
+            ...(data.revealedCells !== undefined ? { revealedCells: data.revealedCells } : {}),
+          },
+        })
+      : await this.prisma.sceneFog.create({
+          data: {
+            sceneId,
+            enabled: data.enabled ?? false,
+            revealedCells: data.revealedCells ?? [],
+          },
+        });
+    return toFogDTO(row);
+  }
+
+  async getFog(campaignId: string, sceneId: string): Promise<SceneFogDTO> {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    const row = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
+    return toFogDTO(row);
+  }
+
+  async setFogEnabled(campaignId: string, sceneId: string, enabled: boolean): Promise<SceneFogDTO> {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    return this.upsertFog(sceneId, { enabled });
+  }
+
+  // revela/oculta um conjunto de células ("col,row"); mode define a operação
+  async paintFog(
+    campaignId: string,
+    sceneId: string,
+    cells: string[],
+    mode: 'reveal' | 'hide',
+  ): Promise<SceneFogDTO> {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    const row = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
+    const current = new Set<string>(Array.isArray(row?.revealedCells) ? (row!.revealedCells as string[]) : []);
+    for (const c of cells) {
+      if (mode === 'reveal') current.add(c);
+      else current.delete(c);
+    }
+    return this.upsertFog(sceneId, { enabled: row?.enabled ?? true, revealedCells: [...current] });
+  }
+
+  // revela tudo / oculta tudo
+  async resetFog(campaignId: string, sceneId: string, revealAll: boolean): Promise<SceneFogDTO> {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    // revelar tudo = lista vazia + enabled false (sem névoa); ocultar tudo = enabled true, nada revelado
+    return revealAll
+      ? this.upsertFog(sceneId, { enabled: false, revealedCells: [] })
+      : this.upsertFog(sceneId, { enabled: true, revealedCells: [] });
   }
 
   // -------- mapas-overlay (só GM muta; render entre fundo e tokens) --------

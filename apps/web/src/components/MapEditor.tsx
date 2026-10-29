@@ -6,7 +6,7 @@ import { GridLayer } from './GridLayer.js';
 import { TokenShape } from './TokenShape.js';
 import { MapOverlayShape } from './MapOverlayShape.js';
 import { assetUrl } from '../lib/assets.js';
-import type { MapOverlayDTO } from '@tabletop/shared';
+import type { MapOverlayDTO, SceneFogDTO } from '@tabletop/shared';
 
 // carrega um HTMLImageElement a partir de uma URL (ou null)
 function useHtmlImage(url?: string | null): HTMLImageElement | null {
@@ -39,14 +39,43 @@ interface Props {
   onTokenChange: (tokenId: string, data: Partial<TokenDTO>) => void;
   onOverlayChange: (overlayId: string, data: Partial<MapOverlayDTO>) => void;
   onOverlayDelete: (overlayId: string) => void;
+  fog: SceneFogDTO;
+  fogPaintMode: 'reveal' | 'hide' | null; // quando != null, o GM está pintando névoa
+  onFogPaint: (cells: string[], mode: 'reveal' | 'hide') => void;
 }
 
-export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, onOverlayDelete }: Props) {
+export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, onOverlayDelete, fog, fogPaintMode, onFogPaint }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
   const background = useHtmlImage(scene.backgroundUrl ? assetUrl(scene.backgroundUrl) : null);
+  const painting = useRef(false);
+
+  const gs = scene.gridSize > 0 ? scene.gridSize : 70;
+  const cols = Math.ceil(scene.width / gs);
+  const rows = Math.ceil(scene.height / gs);
+  const revealed = new Set(fog.revealedCells);
+
+  // converte um ponto do palco numa célula "col,row"
+  function cellAtPointer(): string | null {
+    const st = stageRef.current;
+    const p = st?.getPointerPosition();
+    if (!st || !p) return null;
+    const scaleNow = st.scaleX();
+    const x = (p.x - st.x()) / scaleNow;
+    const y = (p.y - st.y()) / scaleNow;
+    const col = Math.floor(x / gs);
+    const row = Math.floor(y / gs);
+    if (col < 0 || row < 0 || col >= cols || row >= rows) return null;
+    return `${col},${row}`;
+  }
+
+  function paintAtPointer() {
+    if (!fogPaintMode) return;
+    const cell = cellAtPointer();
+    if (cell) onFogPaint([cell], fogPaintMode);
+  }
 
   // zoom centrado no cursor
   function onWheel(e: Konva.KonvaEventObject<WheelEvent>) {
@@ -77,9 +106,14 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         ref={stageRef}
         width={viewW}
         height={viewH}
-        draggable // pan ao arrastar o fundo
+        draggable={!fogPaintMode} // sem pan enquanto pinta névoa
         onWheel={onWheel}
         onMouseDown={(e) => {
+          if (fogPaintMode) {
+            painting.current = true;
+            paintAtPointer();
+            return;
+          }
           // desseleciona só quando o clique cai no FUNDO (stage, cenário ou grade),
           // nunca quando cai num token/mapa. Fundo é marcado com name="background".
           const name = e.target?.name?.();
@@ -88,7 +122,13 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
             setSelectedOverlayId(null);
           }
         }}
-        style={{ background: '#0f0c08', borderRadius: 8, cursor: 'grab' }}
+        onMouseMove={() => {
+          if (fogPaintMode && painting.current) paintAtPointer();
+        }}
+        onMouseUp={() => {
+          painting.current = false;
+        }}
+        style={{ background: '#0f0c08', borderRadius: 8, cursor: fogPaintMode ? 'crosshair' : 'grab' }}
       >
         <Layer>
           <Rect name="background" width={scene.width} height={scene.height} fill="#1b140c" />
@@ -134,6 +174,25 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
             );
           })}
         </Layer>
+        {fog.enabled && (
+          <Layer listening={false}>
+            {Array.from({ length: cols * rows }).map((_, i) => {
+              const col = i % cols;
+              const row = Math.floor(i / cols);
+              if (revealed.has(`${col},${row}`)) return null;
+              return (
+                <Rect
+                  key={`fog-${col}-${row}`}
+                  x={col * gs}
+                  y={row * gs}
+                  width={gs}
+                  height={gs}
+                  fill={isGm ? 'rgba(10,8,5,0.5)' : '#05040a'}
+                />
+              );
+            })}
+          </Layer>
+        )}
       </Stage>
       {isGm && selectedOverlayId && (
         <div className="map-overlay-ctl">
