@@ -28,21 +28,42 @@ interface Props {
   token: TokenDTO;
   selected: boolean;
   draggable: boolean;
+  gridSize: number;
+  snap: boolean;
   onSelect: () => void;
   onDragEnd: (x: number, y: number) => void;
   onTransformEnd: (attrs: { x: number; y: number; width: number; height: number; rotation: number }) => void;
 }
 
-export function TokenShape({ token, selected, draggable, onSelect, onDragEnd, onTransformEnd }: Props) {
+// arredonda para o canto da célula mais próxima
+function snapValue(v: number, grid: number, enabled: boolean): number {
+  if (!enabled || grid <= 0) return v;
+  return Math.round(v / grid) * grid;
+}
+
+export function TokenShape({
+  token,
+  selected,
+  draggable,
+  gridSize,
+  snap,
+  onSelect,
+  onDragEnd,
+  onTransformEnd,
+}: Props) {
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const image = useHtmlImage(token.imageUrl);
 
   useEffect(() => {
-    if (selected && trRef.current && groupRef.current) {
-      trRef.current.nodes([groupRef.current]);
-      trRef.current.getLayer()?.batchDraw();
+    const tr = trRef.current;
+    if (!tr) return;
+    if (selected && groupRef.current) {
+      tr.nodes([groupRef.current]);
+    } else {
+      tr.nodes([]); // desanexa de nó antigo — evita erro ao soltar sobre outro token
     }
+    tr.getLayer()?.batchDraw();
   }, [selected]);
 
   return (
@@ -54,9 +75,25 @@ export function TokenShape({ token, selected, draggable, onSelect, onDragEnd, on
         rotation={token.rotation}
         draggable={draggable}
         opacity={token.isHidden ? 0.5 : 1}
-        onClick={onSelect}
-        onTap={onSelect}
-        onDragEnd={(e) => onDragEnd(e.target.x(), e.target.y())}
+        onClick={(e) => {
+          e.cancelBubble = true; // não deixa o clique vazar para o stage/token de baixo
+          onSelect();
+        }}
+        onTap={(e) => {
+          e.cancelBubble = true;
+          onSelect();
+        }}
+        onDragStart={(e) => {
+          e.cancelBubble = true;
+        }}
+        onDragEnd={(e) => {
+          e.cancelBubble = true;
+          // snap autoritativo no próprio nó: a posição visual já encaixa na grade
+          const sx = snapValue(e.target.x(), gridSize, snap);
+          const sy = snapValue(e.target.y(), gridSize, snap);
+          e.target.position({ x: sx, y: sy });
+          onDragEnd(sx, sy);
+        }}
         onTransformEnd={() => {
           const node = groupRef.current!;
           const scaleX = node.scaleX();

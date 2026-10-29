@@ -4,7 +4,6 @@ import type Konva from 'konva';
 import type { SceneDTO, TokenDTO } from '@tabletop/shared';
 import { GridLayer } from './GridLayer.js';
 import { TokenShape } from './TokenShape.js';
-import { snapToGrid } from '../lib/scenes.js';
 import { assetUrl } from '../lib/assets.js';
 
 // carrega um HTMLImageElement a partir de uma URL (ou null)
@@ -101,11 +100,10 @@ export function MapEditor({ scene, tokens, canEditToken, snap, onTokenChange }: 
                 token={t}
                 selected={selectedId === t.id}
                 draggable={editable}
+                gridSize={scene.gridSize}
+                snap={snap && scene.gridType === 'SQUARE'}
                 onSelect={() => setSelectedId(t.id)}
-                onDragEnd={(x, y) => {
-                  const p = snapToGrid(x, y, scene.gridSize, snap && scene.gridType === 'SQUARE');
-                  onTokenChange(t.id, p);
-                }}
+                onDragEnd={(x, y) => onTokenChange(t.id, { x, y })}
                 onTransformEnd={(attrs) => onTokenChange(t.id, attrs)}
               />
             );

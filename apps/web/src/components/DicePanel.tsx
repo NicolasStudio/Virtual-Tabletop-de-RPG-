@@ -30,15 +30,10 @@ function RollLine({ roll }: { roll: DiceRollDTO }) {
 export function DicePanel({ campaignId, canSeeGmVisibility }: Props) {
   const { rolls, rollDice, clear } = useDiceRolls(campaignId);
   const [formula, setFormula] = useState('');
-  const [adv, setAdv] = useState(false);
-  const [dis, setDis] = useState(false);
   const [visibility, setVisibility] = useState<RollRequest['visibility']>('PUBLIC');
 
   function send(f: string) {
-    const req: RollRequest = { formula: f, visibility };
-    if (adv) req.advantage = true;
-    if (dis) req.disadvantage = true;
-    rollDice(req);
+    rollDice({ formula: f, visibility });
   }
 
   function onCustom(e: React.FormEvent) {
@@ -71,28 +66,6 @@ export function DicePanel({ campaignId, canSeeGmVisibility }: Props) {
       </form>
 
       <div className="dice-opts">
-        <label>
-          <input
-            type="checkbox"
-            checked={adv}
-            onChange={(e) => {
-              setAdv(e.target.checked);
-              if (e.target.checked) setDis(false);
-            }}
-          />
-          <span>vantagem</span>
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={dis}
-            onChange={(e) => {
-              setDis(e.target.checked);
-              if (e.target.checked) setAdv(false);
-            }}
-          />
-          <span>desvantagem</span>
-        </label>
         <select
           aria-label="Visibilidade da rolagem"
           value={visibility}
