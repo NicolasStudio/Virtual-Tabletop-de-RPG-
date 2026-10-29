@@ -166,9 +166,9 @@ export class ScenesService {
     const clean = dots.filter((d) => Number.isFinite(d.x) && Number.isFinite(d.y) && d.r > 0).slice(0, 2000);
     if (mode === 'reveal') reveal.push(...clean);
     else hide.push(...clean);
-    // limita o histórico para não crescer sem fim
+    // desenhar/ocultar SEMPRE ativa a névoa (não há mais switch manual)
     return this.upsertFog(sceneId, {
-      enabled: row?.enabled ?? true,
+      enabled: true,
       brushReveal: reveal.slice(-5000),
       brushHide: hide.slice(-5000),
     });
@@ -199,7 +199,9 @@ export class ScenesService {
       if (mode === 'reveal') current.add(c);
       else current.delete(c);
     }
-    return this.upsertFog(sceneId, { enabled: row?.enabled ?? true, revealedCells: [...current] });
+    // "desenhar névoa" (hide) por célula SEMPRE ativa a névoa; revelar mantém o estado
+    const enabled = mode === 'hide' ? true : row?.enabled ?? true;
+    return this.upsertFog(sceneId, { enabled, revealedCells: [...current] });
   }
 
   // revela tudo / oculta tudo

@@ -652,18 +652,26 @@ input[type='number'] {
 
 
 /* controles de névoa de guerra na toolbar */
-.fog-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-}
-.fog-controls .fog-on {
+.fog-wrap { position: relative; display: inline-block; }
+.fog-wrap .fog-on {
   border-color: #6db1e4 !important;
   color: #6db1e4 !important;
 }
-.fog-size { display: inline-flex; align-items: center; }
-.fog-size input[type='range'] { width: 70px; }
+.fog-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+.fog-group { display: flex; flex-direction: column; gap: 6px; }
+.fog-group-label { font-size: 12px; font-weight: 600; color: var(--text-dim); }
+.fog-row { display: flex; gap: 6px; }
+.fog-row .btn { flex: 1; }
+.fog-reset { border-top: 1px solid var(--border); padding-top: 10px; }
+.fog-menu input[type='range'] { width: 100%; }
+.fog-stop { width: 100%; color: var(--text-dim); }

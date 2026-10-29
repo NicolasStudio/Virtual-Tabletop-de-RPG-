@@ -24,6 +24,7 @@ export function ScenePage() {
   const [fogMode, setFogMode] = useState<'reveal' | 'hide' | null>(null);
   const [fogBrush, setFogBrush] = useState(true); // true = pincel livre; false = por célula
   const [brushSize, setBrushSize] = useState(60);
+  const [fogMenu, setFogMenu] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isGm = role === 'GM';
@@ -310,14 +311,6 @@ export function ScenePage() {
     );
   }
 
-  async function toggleFog() {
-    if (!current || !isGm) return;
-    const next = !current.fog.enabled;
-    setCurrent((c) => (c ? { ...c, fog: { ...c.fog, enabled: next } } : c));
-    if (!next) setFogMode(null);
-    await scenesApi.setFogEnabled(campaignId, current.scene.id, next).catch(() => {});
-  }
-
   async function resetFog(revealAll: boolean) {
     if (!current || !isGm) return;
     const fog = await scenesApi.resetFog(campaignId, current.scene.id, revealAll);
@@ -373,62 +366,66 @@ export function ScenePage() {
             ⚔ Combate
           </button>
           {isGm && current && (
-            <div className="fog-controls">
+            <div className="fog-wrap">
               <button
-                className={`btn ghost ${current.fog.enabled ? 'fog-on' : ''}`}
-                onClick={toggleFog}
-                title="Ligar/desligar a névoa de guerra nesta cena"
+                className={`btn ghost ${fogMode ? 'fog-on' : ''}`}
+                onClick={() => setFogMenu((v) => !v)}
+                aria-expanded={fogMenu}
+                title="Ferramentas de névoa de guerra"
               >
-                🌫️ Névoa {current.fog.enabled ? 'on' : 'off'}
+                🌫️ Névoa
               </button>
-              {current.fog.enabled && (
-                <>
-                  <button
-                    className={`btn sm ${fogBrush ? '' : 'ghost'}`}
-                    onClick={() => setFogBrush(true)}
-                    title="Pincel à mão livre"
-                  >
-                    🖊 Pincel
-                  </button>
-                  <button
-                    className={`btn sm ${fogBrush ? 'ghost' : ''}`}
-                    onClick={() => setFogBrush(false)}
-                    title="Pintar por célula da grade"
-                  >
-                    ▦ Célula
-                  </button>
-                  {fogBrush && (
-                    <label className="fog-size" title="Tamanho do pincel">
+              {fogMenu && (
+                <div className="fog-menu card">
+                  <div className="fog-group">
+                    <span className="fog-group-label">🌑 Desenhar névoa (esconder)</span>
+                    <div className="fog-row">
+                      <button
+                        className={`btn sm ${fogMode === 'hide' && fogBrush ? '' : 'ghost'}`}
+                        onClick={() => { setFogMode('hide'); setFogBrush(true); }}
+                      >🖊 Pincel</button>
+                      <button
+                        className={`btn sm ${fogMode === 'hide' && !fogBrush ? '' : 'ghost'}`}
+                        onClick={() => { setFogMode('hide'); setFogBrush(false); }}
+                      >▦ Célula</button>
+                    </div>
+                  </div>
+
+                  <div className="fog-group">
+                    <span className="fog-group-label">👁 Revelar</span>
+                    <div className="fog-row">
+                      <button
+                        className={`btn sm ${fogMode === 'reveal' && fogBrush ? '' : 'ghost'}`}
+                        onClick={() => { setFogMode('reveal'); setFogBrush(true); }}
+                      >🖊 Pincel</button>
+                      <button
+                        className={`btn sm ${fogMode === 'reveal' && !fogBrush ? '' : 'ghost'}`}
+                        onClick={() => { setFogMode('reveal'); setFogBrush(false); }}
+                      >▦ Célula</button>
+                    </div>
+                  </div>
+
+                  {fogMode && fogBrush && (
+                    <div className="fog-group">
+                      <span className="fog-group-label">Tamanho do pincel</span>
                       <input
-                        type="range"
-                        min={20}
-                        max={160}
-                        value={brushSize}
+                        type="range" min={20} max={160} value={brushSize}
                         onChange={(e) => setBrushSize(Number(e.target.value))}
                       />
-                    </label>
+                    </div>
                   )}
-                  <button
-                    className={`btn sm ${fogMode === 'reveal' ? '' : 'ghost'}`}
-                    onClick={() => setFogMode((m) => (m === 'reveal' ? null : 'reveal'))}
-                    title="Revelar"
-                  >
-                    👁 Revelar
-                  </button>
-                  <button
-                    className={`btn sm ${fogMode === 'hide' ? '' : 'ghost'}`}
-                    onClick={() => setFogMode((m) => (m === 'hide' ? null : 'hide'))}
-                    title="Esconder"
-                  >
-                    🌑 Esconder
-                  </button>
-                  <button className="btn ghost sm" onClick={() => resetFog(false)} title="Cobrir toda a cena de névoa">
-                    Ocultar tudo
-                  </button>
-                  <button className="btn ghost sm" onClick={() => resetFog(true)} title="Revelar toda a cena">
-                    Revelar tudo
-                  </button>
-                </>
+
+                  <div className="fog-row fog-reset">
+                    <button className="btn ghost sm" onClick={() => resetFog(false)}>Ocultar tudo</button>
+                    <button className="btn ghost sm" onClick={() => resetFog(true)}>Revelar tudo</button>
+                  </div>
+
+                  {fogMode && (
+                    <button className="btn ghost sm fog-stop" onClick={() => setFogMode(null)}>
+                      Parar de pintar
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}
