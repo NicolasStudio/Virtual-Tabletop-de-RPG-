@@ -155,6 +155,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
           )}
           {/* MAPAS = overlays por cima da cena, redimensionáveis pelo GM */}
           {overlays.map((o) => (
+            (o.isHidden && !isGm) ? null : (
             <MapOverlayShape
               key={o.id}
               overlay={o}
@@ -163,6 +164,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
               onSelect={() => { setSelectedOverlayId(o.id); setSelectedId(null); }}
               onChange={(data) => onOverlayChange(o.id, data)}
             />
+            )
           ))}
           {/* GRADE por cima do mapa, para alinhar tokens */}
           <GridLayer
@@ -175,6 +177,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         </Layer>
         <Layer>
           {tokens.map((t) => {
+            if (t.isHidden && !isGm) return null; // jogador não vê token oculto
             const editable = canEditToken(t) && !t.isLocked;
             return (
               <TokenShape
@@ -237,22 +240,46 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
           </Layer>
         )}
       </Stage>
-      {isGm && selectedOverlayId && (
-        <div className="map-overlay-ctl">
-          <span className="muted">Mapa selecionado</span>
-          <button
-            className="btn ghost sm"
-            onClick={() => {
-              onOverlayDelete(selectedOverlayId);
-              setSelectedOverlayId(null);
-            }}
-          >
-            🗑 Remover mapa
-          </button>
-        </div>
-      )}
+      {isGm && (() => {
+        const selToken = tokens.find((t) => t.id === selectedId);
+        const selOverlay = overlays.find((o) => o.id === selectedOverlayId);
+        const sel = selToken ?? selOverlay;
+        if (!sel) return null;
+        const isOverlay = !!selOverlay;
+        const label = isOverlay ? 'Mapa' : (selToken as TokenDTO).name;
+        const hidden = isOverlay ? !!(selOverlay as MapOverlayDTO).isHidden : !!(selToken as TokenDTO).isHidden;
+        const locked = isOverlay ? !!(selOverlay as MapOverlayDTO).isLocked : !!(selToken as TokenDTO).isLocked;
+        const apply = (patch: any) => {
+          if (isOverlay) onOverlayChange(selOverlay!.id, patch);
+          else onTokenChange(selToken!.id, patch);
+        };
+        return (
+          <div className="sel-ctl">
+            <span className="sel-name" title={label}>{isOverlay ? '🗺️' : '🎯'} {label}</span>
+            <button
+              className={`btn ghost sm ${hidden ? 'sel-active' : ''}`}
+              onClick={() => apply({ isHidden: !hidden })}
+              title={hidden ? 'Está invisível para o jogador — clique para mostrar' : 'Visível — clique para esconder do jogador'}
+            >
+              {hidden ? '🙈 Invisível' : '👁 Visível'}
+            </button>
+            <button
+              className={`btn ghost sm ${locked ? 'sel-active' : ''}`}
+              onClick={() => apply({ isLocked: !locked })}
+              title={locked ? 'Travado — clique para liberar o movimento' : 'Livre — clique para travar o movimento'}
+            >
+              {locked ? '🔒 Travado' : '🔓 Livre'}
+            </button>
+            {isOverlay && (
+              <button className="btn ghost sm" onClick={() => { onOverlayDelete(selOverlay!.id); setSelectedOverlayId(null); }}>
+                🗑 Remover
+              </button>
+            )}
+          </div>
+        );
+      })()}
       <div className="map-hud muted">
-        zoom {(scale * 100).toFixed(0)}% · arraste o fundo para mover · roda do mouse para zoom{isGm ? ' · clique num mapa para esticá-lo' : ''}
+        zoom {(scale * 100).toFixed(0)}% · arraste o fundo para mover · roda do mouse para zoom{isGm ? ' · clique num mapa/token para ações' : ''}
       </div>
     </div>
   );

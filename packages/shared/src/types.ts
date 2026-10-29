@@ -33,6 +33,7 @@ export interface MapOverlayDTO {  id: string;
   opacity: number;
   order: number;
   isLocked: boolean;
+  isHidden?: boolean;
 }
 
 // Névoa de guerra por células (modelo A). Para o jogador, o servidor envia

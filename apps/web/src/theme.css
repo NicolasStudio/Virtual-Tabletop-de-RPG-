@@ -460,8 +460,8 @@ input[type='number'] {
   appearance: textfield;
 }
 
-/* ---- Controle do mapa-overlay selecionado ---- */
-.map-overlay-ctl {
+/* ---- Barra de contexto do elemento selecionado (token/mapa) ---- */
+.sel-ctl {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -470,7 +470,20 @@ input[type='number'] {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: 8px;
+  flex-wrap: wrap;
   width: fit-content;
+}
+.sel-name {
+  font-weight: 600;
+  font-size: 13px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sel-ctl .sel-active {
+  border-color: #6db1e4 !important;
+  color: #6db1e4 !important;
 }
 
 

@@ -213,6 +213,7 @@ model MapOverlay {
   opacity    Float    @default(1)
   order      Int      @default(0)
   isLocked   Boolean  @default(false)
+  isHidden   Boolean  @default(false) // oculto para jogadores (só GM vê)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

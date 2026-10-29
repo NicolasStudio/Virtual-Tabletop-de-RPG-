@@ -27,6 +27,7 @@ function toOverlayDTO(o: any): MapOverlayDTO {
     opacity: o.opacity,
     order: o.order,
     isLocked: o.isLocked,
+    isHidden: o.isHidden ?? false,
   };
 }
 
@@ -117,11 +118,12 @@ export class ScenesService {
       where: { sceneId },
       orderBy: { order: 'asc' },
     });
+    const visibleOverlays = role === 'GM' ? overlays : overlays.filter((o) => !o.isHidden);
     const fogRow = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
     return {
       scene: toSceneDTO(scene, bgUrl),
       tokens: visible.map(toTokenDTO),
-      overlays: overlays.map(toOverlayDTO),
+      overlays: visibleOverlays.map(toOverlayDTO),
       fog: toFogDTO(fogRow),
     };
   }

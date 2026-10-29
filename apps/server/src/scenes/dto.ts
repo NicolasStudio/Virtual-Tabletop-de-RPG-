@@ -92,4 +92,5 @@ export class UpdateMapOverlayDto {
   @IsOptional() @IsNumber() opacity?: number;
   @IsOptional() @IsInt() order?: number;
   @IsOptional() @IsBoolean() isLocked?: boolean;
+  @IsOptional() @IsBoolean() isHidden?: boolean;
 }
