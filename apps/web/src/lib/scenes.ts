@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import type { SceneDTO, TokenDTO } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, MapOverlayDTO } from '@tabletop/shared';
 
 export const scenesApi = {
   list: (campaignId: string) =>
@@ -7,17 +7,26 @@ export const scenesApi = {
   create: (campaignId: string, data: Partial<SceneDTO> & { name: string }) =>
     api(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }) as Promise<SceneDTO>,
   get: (campaignId: string, sceneId: string) =>
-    api(`/campaigns/${campaignId}/scenes/${sceneId}`) as Promise<{ scene: SceneDTO; tokens: TokenDTO[] }>,
+    api(`/campaigns/${campaignId}/scenes/${sceneId}`) as Promise<{ scene: SceneDTO; tokens: TokenDTO[]; overlays: MapOverlayDTO[] }>,
   update: (campaignId: string, sceneId: string, data: Partial<SceneDTO>) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<SceneDTO>,
   remove: (campaignId: string, sceneId: string) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}`, { method: 'DELETE' }),
 
   createToken: (campaignId: string, sceneId: string, data: { name: string } & Partial<TokenDTO>) =>
-    api(`/campaigns/${campaignId}/scenes/${sceneId}/tokens`, { method: 'POST', body: JSON.stringify(data) }) as Promise<TokenDTO>,  updateToken: (campaignId: string, sceneId: string, tokenId: string, data: Partial<TokenDTO>) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/tokens`, { method: 'POST', body: JSON.stringify(data) }) as Promise<TokenDTO>,
+  updateToken: (campaignId: string, sceneId: string, tokenId: string, data: Partial<TokenDTO>) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}/tokens/${tokenId}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<TokenDTO>,
   removeToken: (campaignId: string, sceneId: string, tokenId: string) =>
     api(`/campaigns/${campaignId}/scenes/${sceneId}/tokens/${tokenId}`, { method: 'DELETE' }),
+
+  // mapas-overlay (manipulados só pelo GM)
+  createOverlay: (campaignId: string, sceneId: string, data: Partial<MapOverlayDTO>) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/overlays`, { method: 'POST', body: JSON.stringify(data) }) as Promise<MapOverlayDTO>,
+  updateOverlay: (campaignId: string, sceneId: string, overlayId: string, data: Partial<MapOverlayDTO>) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/overlays/${overlayId}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<MapOverlayDTO>,
+  removeOverlay: (campaignId: string, sceneId: string, overlayId: string) =>
+    api(`/campaigns/${campaignId}/scenes/${sceneId}/overlays/${overlayId}`, { method: 'DELETE' }),
 };
 
 // snapping à grade (quadrada). Devolve o canto superior-esquerdo encaixado.

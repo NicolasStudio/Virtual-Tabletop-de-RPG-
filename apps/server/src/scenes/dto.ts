@@ -67,3 +67,28 @@ export class UpdateTokenDto {
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() ownerUserId?: string;
 }
+
+
+export class CreateMapOverlayDto {
+  @IsOptional() @IsString() @MaxLength(120) name?: string;
+  @IsOptional() @IsString() assetId?: string;
+  @IsOptional() @IsString() imageUrl?: string;
+  @IsOptional() @IsNumber() x?: number;
+  @IsOptional() @IsNumber() y?: number;
+  @IsOptional() @IsNumber() @Min(1) width?: number;
+  @IsOptional() @IsNumber() @Min(1) height?: number;
+  @IsOptional() @IsNumber() opacity?: number;
+  @IsOptional() @IsInt() order?: number;
+}
+
+export class UpdateMapOverlayDto {
+  @IsOptional() @IsString() @MaxLength(120) name?: string;
+  @IsOptional() @IsNumber() x?: number;
+  @IsOptional() @IsNumber() y?: number;
+  @IsOptional() @IsNumber() @Min(1) width?: number;
+  @IsOptional() @IsNumber() @Min(1) height?: number;
+  @IsOptional() @IsNumber() rotation?: number;
+  @IsOptional() @IsNumber() opacity?: number;
+  @IsOptional() @IsInt() order?: number;
+  @IsOptional() @IsBoolean() isLocked?: boolean;
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { SceneDTO, TokenDTO, FolderKind, TokenKind } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, FolderKind, TokenKind, MapOverlayDTO } from '@tabletop/shared';
 import { scenesApi } from '../lib/scenes.js';
 import { campaignsApi } from '../lib/campaigns.js';
 import { uploadAsset, assetUrl, nameFromFileName } from '../lib/assets.js';
@@ -15,7 +15,7 @@ export function ScenePage() {
   const { campaignId = '' } = useParams();
   const { user } = useAuth();
   const [scenes, setScenes] = useState<SceneDTO[]>([]);
-  const [current, setCurrent] = useState<{ scene: SceneDTO; tokens: TokenDTO[] } | null>(null);
+  const [current, setCurrent] = useState<{ scene: SceneDTO; tokens: TokenDTO[]; overlays: MapOverlayDTO[] } | null>(null);
   const [role, setRole] = useState<string>('PLAYER');
   const [diceOpen, setDiceOpen] = useState(false);
   const [combatOpen, setCombatOpen] = useState(false);
@@ -146,7 +146,7 @@ export function ScenePage() {
       const url = assetUrl(asset.url);
       const niceName = nameFromFileName(file.name); // orc.png -> "Orc"
 
-      if (dest.kind === 'SCENE' || dest.kind === 'MAP') {
+      if (dest.kind === 'SCENE') {
         // cria uma cena nova usando a imagem como fundo (cenário)
         const scene = await scenesApi.create(campaignId, {
           name: niceName || 'Nova cena',
@@ -157,6 +157,18 @@ export function ScenePage() {
         } as any);
         setScenes((s) => [...s, scene]);
         await loadScene(scene.id);
+      } else if (dest.kind === 'MAP') {
+        // MAPA: adiciona um overlay sobre a cena atual (o GM estica/posiciona)
+        if (!current) {
+          setError('Abra uma cena antes de carregar um mapa.');
+          return;
+        }
+        const overlay = await scenesApi.createOverlay(campaignId, current.scene.id, {
+          name: niceName || 'Mapa',
+          assetId: asset.id,
+          imageUrl: url,
+        });
+        setCurrent((c) => (c ? { ...c, overlays: [...(c.overlays ?? []), overlay] } : c));
       } else {
         // TOKEN / ITEM: cria um token com a imagem e nome derivado do arquivo
         if (!current) {
@@ -200,6 +212,23 @@ export function ScenePage() {
   }
 
   const canEditToken = (t: TokenDTO) => isGm || t.ownerUserId === user?.id;
+
+  // mover/esticar mapa-overlay: só GM. Atualização otimista + PATCH no servidor.
+  function onOverlayChange(overlayId: string, data: Partial<MapOverlayDTO>) {
+    if (!current || !isGm) return;
+    setCurrent((c) =>
+      c ? { ...c, overlays: c.overlays.map((o) => (o.id === overlayId ? { ...o, ...data } : o)) } : c,
+    );
+    void scenesApi.updateOverlay(campaignId, current.scene.id, overlayId, data).catch((e: any) =>
+      setError(e?.message ?? 'Falha ao atualizar o mapa.'),
+    );
+  }
+
+  async function deleteOverlay(overlayId: string) {
+    if (!current) return;
+    await scenesApi.removeOverlay(campaignId, current.scene.id, overlayId);
+    setCurrent((c) => (c ? { ...c, overlays: c.overlays.filter((o) => o.id !== overlayId) } : c));
+  }
 
   if (error) {
     return (
@@ -269,9 +298,13 @@ export function ScenePage() {
             <MapEditor
               scene={current.scene}
               tokens={current.tokens}
+              overlays={current.overlays ?? []}
+              isGm={isGm}
               canEditToken={canEditToken}
               snap={snap}
               onTokenChange={onTokenChange}
+              onOverlayChange={onOverlayChange}
+              onOverlayDelete={deleteOverlay}
             />
           ) : (
             <div className="card">

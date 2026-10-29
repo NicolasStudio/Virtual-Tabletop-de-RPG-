@@ -18,6 +18,23 @@ export interface AssetFolderDTO {
   order: number;
 }
 
+// Mapa-overlay: imagem sobre a cena (cenário = fundo; mapa por cima, redimensionável pelo GM)
+export interface MapOverlayDTO {
+  id: string;
+  sceneId: string;
+  assetId?: string | null;
+  imageUrl?: string | null;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
+  order: number;
+  isLocked: boolean;
+}
+
 export interface PublicUser {
   id: string;
   email: string;

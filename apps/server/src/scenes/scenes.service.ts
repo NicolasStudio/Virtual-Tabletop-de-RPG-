@@ -1,6 +1,24 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { CampaignRole, SceneDTO, TokenDTO } from '@tabletop/shared';
+import type { CampaignRole, SceneDTO, TokenDTO, MapOverlayDTO } from '@tabletop/shared';
+
+function toOverlayDTO(o: any): MapOverlayDTO {
+  return {
+    id: o.id,
+    sceneId: o.sceneId,
+    assetId: o.assetId ?? null,
+    imageUrl: o.imageUrl ?? null,
+    name: o.name,
+    x: o.x,
+    y: o.y,
+    width: o.width,
+    height: o.height,
+    rotation: o.rotation,
+    opacity: o.opacity,
+    order: o.order,
+    isLocked: o.isLocked,
+  };
+}
 
 function toSceneDTO(s: any, backgroundUrl?: string | null): SceneDTO {
   return {
@@ -85,7 +103,66 @@ export class ScenesService {
     const tokens = await this.prisma.token.findMany({ where: { sceneId } });
     const visible = role === 'GM' ? tokens : tokens.filter((t) => !t.isHidden);
     const bgUrl = await this.backgroundUrlFor(scene.backgroundAssetId);
-    return { scene: toSceneDTO(scene, bgUrl), tokens: visible.map(toTokenDTO) };
+    const overlays = await this.prisma.mapOverlay.findMany({
+      where: { sceneId },
+      orderBy: { order: 'asc' },
+    });
+    return {
+      scene: toSceneDTO(scene, bgUrl),
+      tokens: visible.map(toTokenDTO),
+      overlays: overlays.map(toOverlayDTO),
+    };
+  }
+
+  // -------- mapas-overlay (só GM muta; render entre fundo e tokens) --------
+
+  async listOverlays(campaignId: string, sceneId: string): Promise<MapOverlayDTO[]> {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    const overlays = await this.prisma.mapOverlay.findMany({ where: { sceneId }, orderBy: { order: 'asc' } });
+    return overlays.map(toOverlayDTO);
+  }
+
+  async createOverlay(campaignId: string, sceneId: string, data: any): Promise<MapOverlayDTO> {
+    const scene = await this.assertSceneInCampaign(campaignId, sceneId);
+    // mapa novo cobre a cena por padrão (pode esticar depois)
+    const overlay = await this.prisma.mapOverlay.create({
+      data: {
+        sceneId,
+        name: data.name ?? 'Mapa',
+        assetId: data.assetId ?? null,
+        imageUrl: data.imageUrl ?? null,
+        x: data.x ?? 0,
+        y: data.y ?? 0,
+        width: data.width ?? scene.width,
+        height: data.height ?? scene.height,
+        opacity: data.opacity ?? 1,
+        order: data.order ?? 0,
+      },
+    });
+    return toOverlayDTO(overlay);
+  }
+
+  private async loadOverlayInCampaign(campaignId: string, overlayId: string) {
+    const overlay = await this.prisma.mapOverlay.findUnique({
+      where: { id: overlayId },
+      include: { scene: true },
+    });
+    if (!overlay || overlay.scene.campaignId !== campaignId) {
+      throw new NotFoundException('Mapa não encontrado.');
+    }
+    return overlay;
+  }
+
+  async updateOverlay(campaignId: string, overlayId: string, data: any): Promise<MapOverlayDTO> {
+    await this.loadOverlayInCampaign(campaignId, overlayId);
+    const overlay = await this.prisma.mapOverlay.update({ where: { id: overlayId }, data });
+    return toOverlayDTO(overlay);
+  }
+
+  async removeOverlay(campaignId: string, overlayId: string) {
+    const overlay = await this.loadOverlayInCampaign(campaignId, overlayId);
+    await this.prisma.mapOverlay.delete({ where: { id: overlay.id } });
+    return { ok: true };
   }
 
   async update(campaignId: string, sceneId: string, data: any): Promise<SceneDTO> {

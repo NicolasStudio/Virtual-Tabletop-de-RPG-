@@ -4,7 +4,9 @@ import type Konva from 'konva';
 import type { SceneDTO, TokenDTO } from '@tabletop/shared';
 import { GridLayer } from './GridLayer.js';
 import { TokenShape } from './TokenShape.js';
+import { MapOverlayShape } from './MapOverlayShape.js';
 import { assetUrl } from '../lib/assets.js';
+import type { MapOverlayDTO } from '@tabletop/shared';
 
 // carrega um HTMLImageElement a partir de uma URL (ou null)
 function useHtmlImage(url?: string | null): HTMLImageElement | null {
@@ -30,15 +32,20 @@ function useHtmlImage(url?: string | null): HTMLImageElement | null {
 interface Props {
   scene: SceneDTO;
   tokens: TokenDTO[];
+  overlays: MapOverlayDTO[];
+  isGm: boolean;
   canEditToken: (t: TokenDTO) => boolean;
   snap: boolean;
   onTokenChange: (tokenId: string, data: Partial<TokenDTO>) => void;
+  onOverlayChange: (overlayId: string, data: Partial<MapOverlayDTO>) => void;
+  onOverlayDelete: (overlayId: string) => void;
 }
 
-export function MapEditor({ scene, tokens, canEditToken, snap, onTokenChange }: Props) {
+export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, onOverlayDelete }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
   const background = useHtmlImage(scene.backgroundUrl ? assetUrl(scene.backgroundUrl) : null);
 
   // zoom centrado no cursor
@@ -74,15 +81,31 @@ export function MapEditor({ scene, tokens, canEditToken, snap, onTokenChange }: 
         onWheel={onWheel}
         onMouseDown={(e) => {
           // clicar no fundo (stage) deseleciona
-          if (e.target === e.target.getStage()) setSelectedId(null);
+          if (e.target === e.target.getStage()) {
+            setSelectedId(null);
+            setSelectedOverlayId(null);
+          }
         }}
         style={{ background: '#0f0c08', borderRadius: 8, cursor: 'grab' }}
       >
         <Layer>
           <Rect width={scene.width} height={scene.height} fill="#1b140c" />
+          {/* CENÁRIO = ambiente ao redor / fundo fixo */}
           {background && (
             <KonvaImage image={background} width={scene.width} height={scene.height} listening={false} />
           )}
+          {/* MAPAS = overlays por cima da cena, redimensionáveis pelo GM */}
+          {overlays.map((o) => (
+            <MapOverlayShape
+              key={o.id}
+              overlay={o}
+              selected={selectedOverlayId === o.id}
+              editable={isGm}
+              onSelect={() => { setSelectedOverlayId(o.id); setSelectedId(null); }}
+              onChange={(data) => onOverlayChange(o.id, data)}
+            />
+          ))}
+          {/* GRADE por cima do mapa, para alinhar tokens */}
           <GridLayer
             type={scene.gridType}
             size={scene.gridSize}
@@ -110,8 +133,22 @@ export function MapEditor({ scene, tokens, canEditToken, snap, onTokenChange }: 
           })}
         </Layer>
       </Stage>
+      {isGm && selectedOverlayId && (
+        <div className="map-overlay-ctl">
+          <span className="muted">Mapa selecionado</span>
+          <button
+            className="btn ghost sm"
+            onClick={() => {
+              onOverlayDelete(selectedOverlayId);
+              setSelectedOverlayId(null);
+            }}
+          >
+            🗑 Remover mapa
+          </button>
+        </div>
+      )}
       <div className="map-hud muted">
-        zoom {(scale * 100).toFixed(0)}% · arraste o fundo para mover · roda do mouse para zoom
+        zoom {(scale * 100).toFixed(0)}% · arraste o fundo para mover · roda do mouse para zoom{isGm ? ' · clique num mapa para esticá-lo' : ''}
       </div>
     </div>
   );

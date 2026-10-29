@@ -188,9 +188,35 @@ model Scene {
   folder      AssetFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   tokens      Token[]
   fogRegions  FogRegion[]
+  overlays    MapOverlay[]
 
   @@index([campaignId])
   @@index([folderId])
+}
+
+// Mapa-overlay: uma imagem posicionada SOBRE a cena (o cenário é o fundo fixo;
+// o mapa vai por cima e pode ser esticado/movido — só pelo GM). Várias por cena,
+// ordenadas por `order`. Fica entre o fundo (cena) e os tokens/itens no z-order.
+model MapOverlay {
+  id         String   @id @default(cuid())
+  sceneId    String
+  assetId    String?  // asset de imagem (opcional se usar imageUrl direto)
+  imageUrl   String?  // URL resolvida da imagem do mapa
+  name       String   @default("Mapa")
+  x          Float    @default(0)
+  y          Float    @default(0)
+  width      Float    @default(1920)
+  height     Float    @default(1080)
+  rotation   Float    @default(0)
+  opacity    Float    @default(1)
+  order      Int      @default(0)
+  isLocked   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  scene      Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
 }
 
 model Asset {

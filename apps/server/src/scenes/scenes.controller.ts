@@ -20,6 +20,8 @@ import {
   UpdateSceneDto,
   CreateTokenDto,
   UpdateTokenDto,
+  CreateMapOverlayDto,
+  UpdateMapOverlayDto,
 } from './dto.js';
 
 // Todas as rotas são escopadas por :campaignId → CampaignRoleGuard garante
@@ -97,5 +99,38 @@ export class ScenesController {
     @CampaignMembership('role') role: CampaignRole,
   ) {
     return this.scenes.removeToken(campaignId, tokenId, role);
+  }
+
+  // -------- mapas-overlay --------
+
+  @Get(':sceneId/overlays')
+  listOverlays(@Param('campaignId') campaignId: string, @Param('sceneId') sceneId: string) {
+    return this.scenes.listOverlays(campaignId, sceneId);
+  }
+
+  @Post(':sceneId/overlays')
+  @RequireRole('GM')
+  createOverlay(
+    @Param('campaignId') campaignId: string,
+    @Param('sceneId') sceneId: string,
+    @Body() dto: CreateMapOverlayDto,
+  ) {
+    return this.scenes.createOverlay(campaignId, sceneId, dto);
+  }
+
+  @Patch(':sceneId/overlays/:overlayId')
+  @RequireRole('GM')
+  updateOverlay(
+    @Param('campaignId') campaignId: string,
+    @Param('overlayId') overlayId: string,
+    @Body() dto: UpdateMapOverlayDto,
+  ) {
+    return this.scenes.updateOverlay(campaignId, overlayId, dto);
+  }
+
+  @Delete(':sceneId/overlays/:overlayId')
+  @RequireRole('GM')
+  removeOverlay(@Param('campaignId') campaignId: string, @Param('overlayId') overlayId: string) {
+    return this.scenes.removeOverlay(campaignId, overlayId);
   }
 }
