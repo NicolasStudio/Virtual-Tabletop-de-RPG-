@@ -41,6 +41,7 @@ export interface SceneDTO {
   folderId?: string | null;
   name: string;
   backgroundAssetId?: string | null;
+  backgroundUrl?: string | null; // URL resolvida do asset de fundo (cenário)
   width: number;
   height: number;
   gridType: GridType;

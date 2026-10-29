@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { SceneDTO, TokenDTO, FolderKind } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, FolderKind, TokenKind } from '@tabletop/shared';
 import { scenesApi } from '../lib/scenes.js';
 import { campaignsApi } from '../lib/campaigns.js';
+import { uploadAsset, assetUrl, nameFromFileName } from '../lib/assets.js';
 import { useAuth } from '../store/auth.js';
 import { MapEditor } from '../components/MapEditor.js';
 import { DicePanel } from '../components/DicePanel.js';
@@ -113,9 +114,71 @@ export function ScenePage() {
     setCurrent((c) => (c ? { ...c, tokens: c.tokens.filter((t) => t.id !== tokenId) } : c));
   }
 
+  // --- upload de imagens ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingImport = useRef<{ kind: FolderKind; folderId: string | null } | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // o botão ⬆ da biblioteca pede para importar: guardamos o destino e abrimos
+  // o seletor de arquivo nativo. O upload real acontece em onFilePicked.
   function importImage(kind: FolderKind, folderId: string | null) {
-    // Ligado ao upload no próximo bloco. Por ora, sinaliza o que ainda falta.
-    alert(`Upload de imagem (${kind}) chega no próximo passo. Pasta destino: ${folderId ?? 'raiz'}.`);
+    pendingImport.current = { kind, folderId };
+    fileInputRef.current?.click();
+  }
+
+  const FOLDER_TO_TOKEN_KIND: Record<string, TokenKind> = {
+    TOKEN: 'CHARACTER',
+    ITEM: 'ITEM',
+  };
+
+  async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite re-selecionar o mesmo arquivo depois
+    const dest = pendingImport.current;
+    pendingImport.current = null;
+    if (!file || !dest) return;
+
+    setUploading(true);
+    try {
+      const asset = await uploadAsset(campaignId, file);
+      const url = assetUrl(asset.url);
+      const niceName = nameFromFileName(file.name); // orc.png -> "Orc"
+
+      if (dest.kind === 'SCENE' || dest.kind === 'MAP') {
+        // cria uma cena nova usando a imagem como fundo (cenário)
+        const scene = await scenesApi.create(campaignId, {
+          name: niceName || 'Nova cena',
+          gridType: 'SQUARE',
+          gridSize: 70,
+          backgroundAssetId: asset.id,
+          ...(dest.folderId ? { folderId: dest.folderId } : {}),
+        } as any);
+        setScenes((s) => [...s, scene]);
+        await loadScene(scene.id);
+      } else {
+        // TOKEN / ITEM: cria um token com a imagem e nome derivado do arquivo
+        if (!current) {
+          setError('Abra uma cena antes de importar tokens.');
+          return;
+        }
+        const token = await scenesApi.createToken(campaignId, current.scene.id, {
+          name: niceName || 'Token',
+          x: 70,
+          y: 70,
+          width: 70,
+          height: 70,
+          imageAssetId: asset.id,
+          imageUrl: url,
+          kind: FOLDER_TO_TOKEN_KIND[dest.kind] ?? 'CHARACTER',
+          ...(dest.folderId ? { folderId: dest.folderId } : {}),
+        });
+        setCurrent((c) => (c ? { ...c, tokens: [...c.tokens, token] } : c));
+      }
+    } catch (err: any) {
+      setError(err?.message ?? 'Falha no upload da imagem.');
+    } finally {
+      setUploading(false);
+    }
   }
 
   // Movimento/transform agora vão pelo SOCKET: o servidor valida e re-emite o
@@ -147,6 +210,14 @@ export function ScenePage() {
 
   return (
     <main className="container" style={{ maxWidth: 1280 }}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        style={{ display: 'none' }}
+        onChange={onFilePicked}
+      />
+      {uploading && <div className="badge" style={{ marginBottom: 8 }}>Enviando imagem…</div>}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <Link to={`/campaigns/${campaignId}`} className="badge">← Campanha</Link>
         <strong style={{ fontSize: 15 }}>{current?.scene.name ?? 'Sem cena'}</strong>

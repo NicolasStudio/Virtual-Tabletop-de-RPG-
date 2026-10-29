@@ -1,7 +1,28 @@
-import { useRef, useEffect } from 'react';
-import { Group, Rect, Text, Transformer } from 'react-konva';
+import { useRef, useEffect, useState } from 'react';
+import { Group, Rect, Text, Transformer, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import type { TokenDTO } from '@tabletop/shared';
+
+// hook simples: carrega um HTMLImageElement a partir de uma URL (ou null)
+function useHtmlImage(url?: string | null): HTMLImageElement | null {
+  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    if (!url) {
+      setImg(null);
+      return;
+    }
+    const image = new window.Image();
+    image.crossOrigin = 'anonymous';
+    image.src = url;
+    image.onload = () => setImg(image);
+    image.onerror = () => setImg(null);
+    return () => {
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [url]);
+  return img;
+}
 
 interface Props {
   token: TokenDTO;
@@ -15,6 +36,7 @@ interface Props {
 export function TokenShape({ token, selected, draggable, onSelect, onDragEnd, onTransformEnd }: Props) {
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
+  const image = useHtmlImage(token.imageUrl);
 
   useEffect(() => {
     if (selected && trRef.current && groupRef.current) {
@@ -50,23 +72,39 @@ export function TokenShape({ token, selected, draggable, onSelect, onDragEnd, on
           });
         }}
       >
-        <Rect
-          width={token.width}
-          height={token.height}
-          cornerRadius={6}
-          fill="#3a2d1a"
-          stroke={selected ? '#e4bf63' : '#c9a24b'}
-          strokeWidth={selected ? 3 : 1.5}
-        />
-        <Text
-          text={token.name}
-          width={token.width}
-          align="center"
-          y={token.height / 2 - 7}
-          fill="#ece3d2"
-          fontSize={13}
-          listening={false}
-        />
+        {image ? (
+          <>
+            <KonvaImage image={image} width={token.width} height={token.height} cornerRadius={6} />
+            <Rect
+              width={token.width}
+              height={token.height}
+              cornerRadius={6}
+              stroke={selected ? '#e4bf63' : '#c9a24b'}
+              strokeWidth={selected ? 3 : 1.5}
+              listening={false}
+            />
+          </>
+        ) : (
+          <>
+            <Rect
+              width={token.width}
+              height={token.height}
+              cornerRadius={6}
+              fill="#3a2d1a"
+              stroke={selected ? '#e4bf63' : '#c9a24b'}
+              strokeWidth={selected ? 3 : 1.5}
+            />
+            <Text
+              text={token.name}
+              width={token.width}
+              align="center"
+              y={token.height / 2 - 7}
+              fill="#ece3d2"
+              fontSize={13}
+              listening={false}
+            />
+          </>
+        )}
         {token.isLocked && (
           <Text text="🔒" x={token.width - 16} y={2} fontSize={12} listening={false} />
         )}

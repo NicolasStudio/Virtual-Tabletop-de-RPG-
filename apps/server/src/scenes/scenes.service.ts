@@ -2,13 +2,14 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CampaignRole, SceneDTO, TokenDTO } from '@tabletop/shared';
 
-function toSceneDTO(s: any): SceneDTO {
+function toSceneDTO(s: any, backgroundUrl?: string | null): SceneDTO {
   return {
     id: s.id,
     campaignId: s.campaignId,
     folderId: s.folderId ?? null,
     name: s.name,
     backgroundAssetId: s.backgroundAssetId,
+    backgroundUrl: backgroundUrl ?? null,
     width: s.width,
     height: s.height,
     gridType: s.gridType,
@@ -46,17 +47,25 @@ function toTokenDTO(t: any): TokenDTO {
 export class ScenesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Resolve a URL pública do asset de fundo (cenário) a partir do seu id.
+  // Driver local serve via /api/files/<storageKey>.
+  private async backgroundUrlFor(backgroundAssetId?: string | null): Promise<string | null> {
+    if (!backgroundAssetId) return null;
+    const asset = await this.prisma.asset.findUnique({ where: { id: backgroundAssetId } });
+    return asset ? `/api/files/${asset.storageKey}` : null;
+  }
+
   async list(campaignId: string): Promise<SceneDTO[]> {
     const scenes = await this.prisma.scene.findMany({
       where: { campaignId },
       orderBy: { createdAt: 'asc' },
     });
-    return scenes.map(toSceneDTO);
+    return Promise.all(scenes.map(async (s) => toSceneDTO(s, await this.backgroundUrlFor(s.backgroundAssetId))));
   }
 
   async create(campaignId: string, data: any): Promise<SceneDTO> {
     const scene = await this.prisma.scene.create({ data: { campaignId, ...data } });
-    return toSceneDTO(scene);
+    return toSceneDTO(scene, await this.backgroundUrlFor(scene.backgroundAssetId));
   }
 
   private async assertSceneInCampaign(campaignId: string, sceneId: string) {
@@ -75,13 +84,14 @@ export class ScenesService {
     const scene = await this.assertSceneInCampaign(campaignId, sceneId);
     const tokens = await this.prisma.token.findMany({ where: { sceneId } });
     const visible = role === 'GM' ? tokens : tokens.filter((t) => !t.isHidden);
-    return { scene: toSceneDTO(scene), tokens: visible.map(toTokenDTO) };
+    const bgUrl = await this.backgroundUrlFor(scene.backgroundAssetId);
+    return { scene: toSceneDTO(scene, bgUrl), tokens: visible.map(toTokenDTO) };
   }
 
   async update(campaignId: string, sceneId: string, data: any): Promise<SceneDTO> {
     await this.assertSceneInCampaign(campaignId, sceneId);
     const scene = await this.prisma.scene.update({ where: { id: sceneId }, data });
-    return toSceneDTO(scene);
+    return toSceneDTO(scene, await this.backgroundUrlFor(scene.backgroundAssetId));
   }
 
   async remove(campaignId: string, sceneId: string) {

@@ -3,6 +3,7 @@
 import type { PublicUser } from '@tabletop/shared';
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+export const API_BASE = API;
 
 let accessToken: string | null = null;
 export function setAccessToken(t: string | null) {

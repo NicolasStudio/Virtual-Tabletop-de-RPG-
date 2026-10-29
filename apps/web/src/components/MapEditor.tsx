@@ -1,10 +1,32 @@
-import { useRef, useState } from 'react';
-import { Stage, Layer, Rect } from 'react-konva';
+import { useRef, useState, useEffect } from 'react';
+import { Stage, Layer, Rect, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import type { SceneDTO, TokenDTO } from '@tabletop/shared';
 import { GridLayer } from './GridLayer.js';
 import { TokenShape } from './TokenShape.js';
 import { snapToGrid } from '../lib/scenes.js';
+import { assetUrl } from '../lib/assets.js';
+
+// carrega um HTMLImageElement a partir de uma URL (ou null)
+function useHtmlImage(url?: string | null): HTMLImageElement | null {
+  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    if (!url) {
+      setImg(null);
+      return;
+    }
+    const image = new window.Image();
+    image.crossOrigin = 'anonymous';
+    image.src = url;
+    image.onload = () => setImg(image);
+    image.onerror = () => setImg(null);
+    return () => {
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [url]);
+  return img;
+}
 
 interface Props {
   scene: SceneDTO;
@@ -18,6 +40,7 @@ export function MapEditor({ scene, tokens, canEditToken, snap, onTokenChange }: 
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const background = useHtmlImage(scene.backgroundUrl ? assetUrl(scene.backgroundUrl) : null);
 
   // zoom centrado no cursor
   function onWheel(e: Konva.KonvaEventObject<WheelEvent>) {
@@ -58,6 +81,9 @@ export function MapEditor({ scene, tokens, canEditToken, snap, onTokenChange }: 
       >
         <Layer>
           <Rect width={scene.width} height={scene.height} fill="#1b140c" />
+          {background && (
+            <KonvaImage image={background} width={scene.width} height={scene.height} listening={false} />
+          )}
           <GridLayer
             type={scene.gridType}
             size={scene.gridSize}
