@@ -153,13 +153,13 @@ export function CombatTracker({ campaignId, isGm, tokens = [] }: Props) {
     <div className="combat-tracker">
       <div className="combat-head">
         <strong>{encounter.name}</strong>
-        <span className="badge">Rodada {encounter.round}</span>
+        <span className="round-badge" title="Rodada atual">Rodada&nbsp;{encounter.round}</span>
         {isGm && (
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
             <button className="btn sm" onClick={async () => { await combatApi.nextTurn(campaignId); reload(); }}>
               Próximo turno ▶
             </button>
-            <button className="btn ghost sm" onClick={async () => { await combatApi.end(campaignId); reload(); }}>
+            <button className="btn ghost sm combat-end" onClick={async () => { await combatApi.end(campaignId); reload(); }}>
               Encerrar
             </button>
           </span>

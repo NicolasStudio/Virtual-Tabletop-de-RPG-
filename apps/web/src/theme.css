@@ -372,17 +372,25 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 .lib-chevron { width: 12px; color: var(--text-dim); }
 .lib-icon { font-size: 15px; }
 .lib-title { flex: 1; }
-.lib-head-actions, .lib-folder-actions { display: flex; gap: 2px; }
+.lib-head-actions, .lib-folder-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
 .lib-section-body { padding: 2px 0 2px 6px; }
 .lib-folder { margin: 2px 0; }
 .lib-folder-head {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 0;
+  padding: 2px 2px;
+  border-radius: 6px;
 }
+.lib-folder-head:hover { background: var(--bg); }
 .lib-folder-toggle {
   flex: 1;
+  min-width: 0;
   text-align: left;
   background: none;
   border: none;
@@ -391,8 +399,14 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
   font-size: 13px;
   padding: 3px 4px;
   border-radius: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .lib-folder-toggle:hover { background: var(--bg); }
+/* ações da pasta só aparecem ao passar o mouse — menos poluição visual */
+.lib-folder-actions { opacity: 0; transition: opacity 0.12s; }
+.lib-folder-head:hover .lib-folder-actions { opacity: 1; }
 .lib-folder-body { padding-left: 10px; border-left: 1px dashed var(--border); margin-left: 6px; }
 .lib-item {
   display: flex;
@@ -598,3 +612,30 @@ input[type='number'] {
   margin-top: 8px;
   width: 100%;
 }
+
+/* botão Encerrar combate */
+.combat-end {
+  border-color: #e5737355 !important;
+  color: #e57373 !important;
+}
+.combat-end:hover {
+  background: #e5737318 !important;
+  border-color: #e57373 !important;
+}
+
+
+/* badge de rodada do combate */
+.round-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-strong, var(--text));
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  line-height: 1.2;
+}
+.combat-head { gap: 8px; align-items: center; }
