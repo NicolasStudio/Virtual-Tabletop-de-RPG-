@@ -19,6 +19,7 @@ export function ScenePage() {
   const [role, setRole] = useState<string>('PLAYER');
   const [diceOpen, setDiceOpen] = useState(false);
   const [combatOpen, setCombatOpen] = useState(false);
+  const [libOpen, setLibOpen] = useState(true);
   const [snap, setSnap] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -226,6 +227,9 @@ export function ScenePage() {
           <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
           <span className="muted">snapping à grade</span>
         </label>
+        <button className="btn" onClick={() => setLibOpen((v) => !v)} aria-expanded={libOpen} title="Biblioteca de cenas, mapas, tokens e itens">
+          📚 Biblioteca
+        </button>
         <button className="btn" onClick={() => setDiceOpen((v) => !v)} aria-expanded={diceOpen}>
           🎲 Dados
         </button>
@@ -243,20 +247,22 @@ export function ScenePage() {
         </div>
       )}
 
-      <div className="scene-workspace">
-        <LibraryPanel
-          campaignId={campaignId}
-          isGm={isGm}
-          scenes={scenes}
-          tokens={current?.tokens ?? []}
-          currentSceneId={current?.scene.id}
-          onOpenScene={loadScene}
-          onCreateScene={createScene}
-          onDeleteScene={deleteScene}
-          onCreateToken={addToken}
-          onDeleteToken={deleteToken}
-          onImport={importImage}
-        />
+      <div className={`scene-workspace ${libOpen ? 'lib-open' : 'lib-collapsed'}`}>
+        {libOpen && (
+          <LibraryPanel
+            campaignId={campaignId}
+            isGm={isGm}
+            scenes={scenes}
+            tokens={current?.tokens ?? []}
+            currentSceneId={current?.scene.id}
+            onOpenScene={loadScene}
+            onCreateScene={createScene}
+            onDeleteScene={deleteScene}
+            onCreateToken={addToken}
+            onDeleteToken={deleteToken}
+            onImport={importImage}
+          />
+        )}
 
         <div className="scene-map">
           {current ? (

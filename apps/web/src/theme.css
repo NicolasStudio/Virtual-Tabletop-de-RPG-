@@ -333,16 +333,18 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 
 /* ---- Biblioteca de pastas (Cenas / Tokens) ---- */
 .scene-workspace {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 14px;
+  position: relative;
   margin-top: 14px;
-  align-items: start;
 }
-@media (max-width: 860px) {
-  .scene-workspace { grid-template-columns: 1fr; }
+.scene-workspace .scene-map {
+  width: 100%;
 }
 .library {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  width: 260px;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -350,6 +352,10 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
   max-height: 680px;
   overflow-y: auto;
   color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+@media (max-width: 860px) {
+  .library { width: calc(100% - 16px); }
 }
 .lib-section { margin-bottom: 10px; }
 .lib-section-head {
