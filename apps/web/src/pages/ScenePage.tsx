@@ -388,38 +388,38 @@ export function ScenePage() {
               {fogMenu && (
                 <div className="fog-menu card">
                   <div className="fog-group">
-                    <span className="fog-group-label">🌑 Desenhar névoa (esconder)</span>
+                    <span className="fog-group-label">Desenhar névoa (esconder)</span>
                     <div className="fog-row">
                       <button
                         className={`btn sm ${fogMode === 'hide' && fogBrush ? '' : 'ghost'}`}
                         onClick={() =>
                           fogMode === 'hide' && fogBrush ? setFogMode(null) : (setFogMode('hide'), setFogBrush(true))
                         }
-                      >🖊 Pincel</button>
+                      >Pincel</button>
                       <button
                         className={`btn sm ${fogMode === 'hide' && !fogBrush ? '' : 'ghost'}`}
                         onClick={() =>
                           fogMode === 'hide' && !fogBrush ? setFogMode(null) : (setFogMode('hide'), setFogBrush(false))
                         }
-                      >▦ Célula</button>
+                      >Célula</button>
                     </div>
                   </div>
 
                   <div className="fog-group">
-                    <span className="fog-group-label">👁 Revelar</span>
+                    <span className="fog-group-label">Revelar</span>
                     <div className="fog-row">
                       <button
                         className={`btn sm ${fogMode === 'reveal' && fogBrush ? '' : 'ghost'}`}
                         onClick={() =>
                           fogMode === 'reveal' && fogBrush ? setFogMode(null) : (setFogMode('reveal'), setFogBrush(true))
                         }
-                      >🖊 Pincel</button>
+                      >Pincel</button>
                       <button
                         className={`btn sm ${fogMode === 'reveal' && !fogBrush ? '' : 'ghost'}`}
                         onClick={() =>
                           fogMode === 'reveal' && !fogBrush ? setFogMode(null) : (setFogMode('reveal'), setFogBrush(false))
                         }
-                      >▦ Célula</button>
+                      >Célula</button>
                     </div>
                   </div>
 
@@ -440,7 +440,7 @@ export function ScenePage() {
 
                   {fogMode && (
                     <button className="btn sm fog-stop" onClick={() => setFogMode(null)}>
-                      ✋ Parar de pintar ({fogMode === 'hide' ? 'esconder' : 'revelar'} · {fogBrush ? 'pincel' : 'célula'})
+                      Parar de pintar
                     </button>
                   )}
                 </div>
