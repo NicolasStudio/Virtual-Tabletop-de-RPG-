@@ -6,7 +6,7 @@ const DICE = [4, 6, 8, 10, 12, 20, 100];
 
 interface Props {
   campaignId: string;
-  canSeeGmVisibility: boolean; // GM pode rolar "só para o mestre"
+  canSeeGmVisibility?: boolean; // mantido por compat; visibilidade agora é só Pública/Privada
 }
 
 function RollLine({ roll }: { roll: DiceRollDTO }) {
@@ -27,7 +27,7 @@ function RollLine({ roll }: { roll: DiceRollDTO }) {
   );
 }
 
-export function DicePanel({ campaignId, canSeeGmVisibility }: Props) {
+export function DicePanel({ campaignId }: Props) {
   const { rolls, rollDice, clear } = useDiceRolls(campaignId);
   const [formula, setFormula] = useState('');
   const [visibility, setVisibility] = useState<RollRequest['visibility']>('PUBLIC');
@@ -72,8 +72,7 @@ export function DicePanel({ campaignId, canSeeGmVisibility }: Props) {
           onChange={(e) => setVisibility(e.target.value as RollRequest['visibility'])}
         >
           <option value="PUBLIC">pública</option>
-          {canSeeGmVisibility && <option value="GM">só mestre</option>}
-          <option value="PRIVATE">só eu</option>
+          <option value="PRIVATE">privada</option>
         </select>
       </div>
 

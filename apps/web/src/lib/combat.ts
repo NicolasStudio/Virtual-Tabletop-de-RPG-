@@ -31,7 +31,7 @@ export const combatApi = {
   get: (c: string) => api(base(c)) as Promise<Encounter | null>,
   create: (c: string, body: { name?: string; sceneId?: string; combatants?: any[] }) =>
     api(base(c), { method: 'POST', body: JSON.stringify(body) }) as Promise<Encounter>,
-  addCombatant: (c: string, body: { name: string; initiative?: number; hp?: number; maxHp?: number; isNpc?: boolean }) =>
+  addCombatant: (c: string, body: { name: string; tokenId?: string; initiative?: number; hp?: number; maxHp?: number; isNpc?: boolean }) =>
     api(`${base(c)}/combatants`, { method: 'POST', body: JSON.stringify(body) }) as Promise<Encounter>,
   nextTurn: (c: string) => api(`${base(c)}/next-turn`, { method: 'POST' }) as Promise<Encounter>,
   damage: (c: string, id: string, amount: number) =>

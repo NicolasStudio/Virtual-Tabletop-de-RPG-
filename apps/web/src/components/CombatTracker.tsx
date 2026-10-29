@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import type { TokenDTO } from '@tabletop/shared';
 import { combatApi, type Combatant } from '../lib/combat.js';
 import { useCombat } from '../hooks/useCombat.js';
 
 interface Props {
   campaignId: string;
   isGm: boolean;
+  tokens?: TokenDTO[]; // tokens do mapa atual, para o auto-complete de combatentes
 }
 
 function CombatantRow({
@@ -67,6 +69,7 @@ function CombatantRow({
           <button className="btn ghost sm" onClick={() => applyDamage(-1)} title="cura">+</button>
           <button
             className="link-btn"
+            title="remover da fila"
             onClick={async () => { await combatApi.remove(campaignId, c.id); onChanged(); }}
           >
             ✕
@@ -77,7 +80,7 @@ function CombatantRow({
   );
 }
 
-export function CombatTracker({ campaignId, isGm }: Props) {
+export function CombatTracker({ campaignId, isGm, tokens = [] }: Props) {
   const { encounter, reload } = useCombat(campaignId);
   const [newName, setNewName] = useState('');
   const [newInit, setNewInit] = useState('');
@@ -88,16 +91,50 @@ export function CombatTracker({ campaignId, isGm }: Props) {
     reload();
   }
 
+  // #10: quando o nome digitado casa com um token do mapa, puxamos o HP dele
+  // (se houver em stats) e vinculamos o tokenId.
+  function matchToken(name: string): TokenDTO | undefined {
+    const n = name.trim().toLowerCase();
+    return tokens.find((t) => t.name.trim().toLowerCase() === n);
+  }
+
+  function onNameChange(value: string) {
+    setNewName(value);
+    const tok = matchToken(value);
+    if (tok) {
+      const hp = (tok.stats as any)?.hp?.max ?? (tok.stats as any)?.hp;
+      if (hp && !newHp) setNewHp(String(hp));
+    }
+  }
+
   async function addCombatant(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
+    const tok = matchToken(newName);
     await combatApi.addCombatant(campaignId, {
       name: newName.trim(),
       initiative: parseInt(newInit, 10) || 0,
       hp: parseInt(newHp, 10) || 0,
       maxHp: parseInt(newHp, 10) || 0,
-    });
+      ...(tok ? { tokenId: tok.id, isNpc: tok.kind === 'MONSTER' || tok.kind === 'NPC' } : {}),
+    } as any);
     setNewName(''); setNewInit(''); setNewHp('');
+    reload();
+  }
+
+  // atalho: joga todos os tokens do mapa na fila de combate de uma vez
+  async function addAllTokens() {
+    for (const t of tokens) {
+      const hp = (t.stats as any)?.hp?.max ?? (t.stats as any)?.hp ?? 0;
+      await combatApi.addCombatant(campaignId, {
+        name: t.name,
+        initiative: 0,
+        hp: Number(hp) || 0,
+        maxHp: Number(hp) || 0,
+        tokenId: t.id,
+        isNpc: t.kind === 'MONSTER' || t.kind === 'NPC',
+      } as any);
+    }
     reload();
   }
 
@@ -146,12 +183,29 @@ export function CombatTracker({ campaignId, isGm }: Props) {
       </ol>
 
       {isGm && (
-        <form className="combat-add" onSubmit={addCombatant}>
-          <input placeholder="Nome" value={newName} onChange={(e) => setNewName(e.target.value)} />
-          <input placeholder="Init" type="number" value={newInit} onChange={(e) => setNewInit(e.target.value)} style={{ width: 60 }} />
-          <input placeholder="HP" type="number" value={newHp} onChange={(e) => setNewHp(e.target.value)} style={{ width: 60 }} />
-          <button className="btn sm" type="submit">+ Adicionar</button>
-        </form>
+        <>
+          <form className="combat-add" onSubmit={addCombatant}>
+            <input
+              placeholder="Nome (ou escolha um token)"
+              list="combat-token-names"
+              value={newName}
+              onChange={(e) => onNameChange(e.target.value)}
+            />
+            <datalist id="combat-token-names">
+              {tokens.map((t) => (
+                <option key={t.id} value={t.name} />
+              ))}
+            </datalist>
+            <input placeholder="Init" type="number" value={newInit} onChange={(e) => setNewInit(e.target.value)} style={{ width: 60 }} />
+            <input placeholder="HP" type="number" value={newHp} onChange={(e) => setNewHp(e.target.value)} style={{ width: 60 }} />
+            <button className="btn sm" type="submit">+ Adicionar</button>
+          </form>
+          {tokens.length > 0 && (
+            <button className="link-btn" style={{ marginTop: 4 }} onClick={addAllTokens}>
+              + Adicionar todos os tokens do mapa ({tokens.length})
+            </button>
+          )}
+        </>
       )}
     </div>
   );

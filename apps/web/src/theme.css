@@ -427,3 +427,15 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 .lib-mini:hover { background: var(--bg); border-color: var(--border); color: var(--text); }
 .lib-mini.danger:hover { color: #e57373; border-color: #e5737355; }
 .lib-empty { font-size: 12px; padding: 6px 4px; }
+
+
+/* ---- Remover as setas (spinners) dos inputs numéricos ---- */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

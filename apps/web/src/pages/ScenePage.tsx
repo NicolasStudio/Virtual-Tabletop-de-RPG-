@@ -311,7 +311,7 @@ export function ScenePage() {
                 fechar ✕
               </button>
             </div>
-            <CombatTracker campaignId={campaignId} isGm={isGm} />
+            <CombatTracker campaignId={campaignId} isGm={isGm} tokens={current?.tokens ?? []} />
           </aside>
         </>
       )}
