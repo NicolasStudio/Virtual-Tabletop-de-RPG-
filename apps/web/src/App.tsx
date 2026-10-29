@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect } from 'react';
 import {
   BrowserRouter,
   Routes,
@@ -15,8 +15,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage.js';
 import { ProfilePage } from './pages/ProfilePage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { CampaignPage } from './pages/CampaignPage.js';
-// ScenePage carrega Konva (pesado) — só baixa quando o usuário abre o mapa
-const ScenePage = lazy(() => import('./pages/ScenePage.js').then((m) => ({ default: m.ScenePage })));
+import { ScenePage } from './pages/ScenePage.js';
 
 function TopBar() {
   const { status, user } = useAuth();
@@ -96,9 +95,7 @@ export function App() {
             path="/campaigns/:campaignId/scene"
             element={
               <RequireAuth>
-                <Suspense fallback={<main className="container">Carregando mapa…</main>}>
-                  <ScenePage />
-                </Suspense>
+                <ScenePage />
               </RequireAuth>
             }
           />

@@ -10,27 +10,10 @@ import { RedisIoAdapter } from './realtime/redis-io.adapter.js';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: false });
 
-  const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:5173';
-
-  // Hardening de headers. CSP explícito: libera só o necessário (imagens do
-  // próprio backend/data/blob e conexões ws para o Socket.IO), bloqueia o resto.
-  // crossOriginResourcePolicy relaxado para o front (porta diferente) poder
-  // carregar imagens servidas por /api/files.
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        useDefaults: true,
-        directives: {
-          'img-src': ["'self'", 'data:', 'blob:', webOrigin],
-          'connect-src': ["'self'", webOrigin, 'ws:', 'wss:'],
-          'script-src': ["'self'"],
-        },
-      },
-      crossOriginResourcePolicy: { policy: 'cross-origin' },
-    }),
-  );
+  app.use(helmet());
   app.use(cookieParser());
 
+  const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:5173';
   app.enableCors({ origin: webOrigin, credentials: true });
 
   // Socket.IO: usa Redis quando REDIS_URL está configurado (escala horizontal)
