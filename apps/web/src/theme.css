@@ -617,11 +617,12 @@ input[type='number'] {
 .combat-end {
   background: #c0392b !important;
   border-color: #c0392b !important;
-  color: #fff !important;
+  color: #1a140b !important;
 }
 .combat-end:hover {
   background: #a93226 !important;
   border-color: #a93226 !important;
+  color: #1a140b !important;
 }
 
 

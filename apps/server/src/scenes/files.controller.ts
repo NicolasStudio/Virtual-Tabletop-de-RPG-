@@ -58,6 +58,34 @@ export class FilesController {
   @Get(':key')
   async serve(@Param('key') key: string, @Res() res: Response) {
     const buf = await this.storage.readLocal(key);
+    res.type(mimeFromKey(key)); // Content-Type correto p/ o navegador renderizar
+    res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(buf);
+  }
+}
+
+// infere o mime pela extensão (o nome do arquivo é <uuid>.<ext>)
+function mimeFromKey(key: string): string {
+  const ext = key.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'png':
+      return 'image/png';
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    case 'svg':
+      return 'image/svg+xml';
+    case 'mp3':
+      return 'audio/mpeg';
+    case 'ogg':
+      return 'audio/ogg';
+    case 'pdf':
+      return 'application/pdf';
+    default:
+      return 'application/octet-stream';
   }
 }
