@@ -86,9 +86,9 @@ export function ScenePage() {
     await loadScene(scene.id);
   }
 
-  async function addToken(folderId: string | null = null) {
+  async function addToken(folderId: string | null = null, kind: TokenKind = 'CHARACTER') {
     if (!current) return;
-    const name = prompt('Nome do token:', 'Token');
+    const name = prompt(kind === 'ITEM' ? 'Nome do item:' : 'Nome do token:', kind === 'ITEM' ? 'Item' : 'Token');
     if (!name) return;
     const token = await scenesApi.createToken(campaignId, current.scene.id, {
       name,
@@ -96,6 +96,7 @@ export function ScenePage() {
       y: 70,
       width: 70,
       height: 70,
+      kind,
       ...(folderId ? { folderId } : {}),
     });
     setCurrent((c) => (c ? { ...c, tokens: [...c.tokens, token] } : c));

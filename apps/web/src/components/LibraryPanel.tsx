@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { SceneDTO, TokenDTO, AssetFolderDTO, FolderKind } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, AssetFolderDTO, FolderKind, TokenKind } from '@tabletop/shared';
 import { foldersApi, buildFolderTree, type FolderNode } from '../lib/folders.js';
 
 interface Props {
@@ -11,15 +11,17 @@ interface Props {
   onOpenScene: (sceneId: string) => void;
   onCreateScene: (folderId: string | null) => void;
   onDeleteScene: (sceneId: string) => void;
-  onCreateToken: (folderId: string | null) => void;
+  onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (tokenId: string) => void;
-  // disparado quando o usuário pede para importar/subir uma imagem (ligado ao upload no próximo bloco)
+  // disparado quando o usuário pede para importar/subir uma imagem
   onImport?: (kind: FolderKind, folderId: string | null) => void;
 }
 
 const SECTION_META: { kind: FolderKind; icon: string; label: string }[] = [
   { kind: 'SCENE', icon: '🗺️', label: 'Cenas' },
+  { kind: 'MAP', icon: '🧭', label: 'Mapas' },
   { kind: 'TOKEN', icon: '🎭', label: 'Tokens' },
+  { kind: 'ITEM', icon: '💎', label: 'Itens' },
 ];
 
 export function LibraryPanel(props: Props) {
@@ -114,7 +116,7 @@ function LibrarySection({
   onOpenScene: (id: string) => void;
   onCreateScene: (folderId: string | null) => void;
   onDeleteScene: (id: string) => void;
-  onCreateToken: (folderId: string | null) => void;
+  onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (id: string) => void;
   onImport?: (kind: FolderKind, folderId: string | null) => void;
   onAddFolder: (kind: FolderKind, parentId: string | null) => void;
@@ -123,10 +125,20 @@ function LibrarySection({
 }) {
   const [open, setOpen] = useState(true);
   const isScene = meta.kind === 'SCENE';
+  const isItem = meta.kind === 'ITEM';
+  const isMap = meta.kind === 'MAP';
+  const isTokenLike = meta.kind === 'TOKEN' || isItem; // seções que listam tokens
+
+  // tokens desta seção: ITEM lista kind=ITEM; TOKEN lista o resto (personagem/monstro/npc)
+  const sectionTokens = isItem
+    ? tokens.filter((t) => t.kind === 'ITEM')
+    : meta.kind === 'TOKEN'
+    ? tokens.filter((t) => t.kind !== 'ITEM')
+    : [];
 
   // itens sem pasta (folderId null) do tipo desta seção
   const looseScenes = isScene ? scenes.filter((s) => !s.folderId) : [];
-  const looseTokens = !isScene ? tokens.filter((t) => !t.folderId) : [];
+  const looseTokens = isTokenLike ? sectionTokens.filter((t) => !t.folderId) : [];
 
   return (
     <section className="lib-section">
@@ -137,13 +149,15 @@ function LibrarySection({
         {isGm && (
           <span className="lib-head-actions" onClick={(e) => e.stopPropagation()}>
             <button className="lib-mini" title="Nova pasta" onClick={() => onAddFolder(meta.kind, null)}>📁+</button>
-            <button
-              className="lib-mini"
-              title={isScene ? 'Nova cena' : 'Novo token'}
-              onClick={() => (isScene ? onCreateScene(null) : onCreateToken(null))}
-            >
-              ＋
-            </button>
+            {onImport && (isScene || isMap || isTokenLike) && (
+              <button className="lib-mini" title="Importar imagem" onClick={() => onImport(meta.kind, null)}>⬆</button>
+            )}
+            {isScene && (
+              <button className="lib-mini" title="Nova cena" onClick={() => onCreateScene(null)}>＋</button>
+            )}
+            {isTokenLike && (
+              <button className="lib-mini" title={isItem ? 'Novo item' : 'Novo token'} onClick={() => onCreateToken(null, isItem ? 'ITEM' : 'CHARACTER')}>＋</button>
+            )}
           </span>
         )}
       </header>
@@ -158,7 +172,7 @@ function LibrarySection({
               isGm={isGm}
               kind={meta.kind}
               scenes={scenes}
-              tokens={tokens}
+              tokens={sectionTokens}
               currentSceneId={currentSceneId}
               onOpenScene={onOpenScene}
               onCreateScene={onCreateScene}
@@ -190,7 +204,13 @@ function LibrarySection({
 
           {folderTree.length === 0 && looseScenes.length === 0 && looseTokens.length === 0 && (
             <p className="muted lib-empty">
-              {isScene ? 'Nenhuma cena ainda.' : 'Nenhum token ainda.'}
+              {isScene
+                ? 'Nenhuma cena ainda.'
+                : isMap
+                ? 'Mapas-overlay chegam na etapa de cenário + mapas.'
+                : isItem
+                ? 'Nenhum item ainda.'
+                : 'Nenhum token ainda.'}
             </p>
           )}
         </div>
@@ -227,7 +247,7 @@ function LibraryFolder({
   onOpenScene: (id: string) => void;
   onCreateScene: (folderId: string | null) => void;
   onDeleteScene: (id: string) => void;
-  onCreateToken: (folderId: string | null) => void;
+  onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (id: string) => void;
   onImport?: (kind: FolderKind, folderId: string | null) => void;
   onAddFolder: (kind: FolderKind, parentId: string | null) => void;
@@ -236,8 +256,9 @@ function LibraryFolder({
 }) {
   const [open, setOpen] = useState(true);
   const isScene = kind === 'SCENE';
+  const isTokenLike = kind === 'TOKEN' || kind === 'ITEM';
   const childScenes = isScene ? scenes.filter((s) => s.folderId === folder.id) : [];
-  const childTokens = !isScene ? tokens.filter((t) => t.folderId === folder.id) : [];
+  const childTokens = isTokenLike ? tokens.filter((t) => t.folderId === folder.id) : [];
 
   return (
     <div className="lib-folder" style={{ marginLeft: depth * 12 }}>
@@ -248,13 +269,12 @@ function LibraryFolder({
         {isGm && (
           <span className="lib-folder-actions">
             <button className="lib-mini" title="Subpasta" onClick={() => onAddFolder(kind, folder.id)}>📁+</button>
-            <button
-              className="lib-mini"
-              title={isScene ? 'Nova cena aqui' : 'Novo token aqui'}
-              onClick={() => (isScene ? onCreateScene(folder.id) : onCreateToken(folder.id))}
-            >
-              ＋
-            </button>
+            {isScene && (
+              <button className="lib-mini" title="Nova cena aqui" onClick={() => onCreateScene(folder.id)}>＋</button>
+            )}
+            {isTokenLike && (
+              <button className="lib-mini" title={kind === 'ITEM' ? 'Novo item aqui' : 'Novo token aqui'} onClick={() => onCreateToken(folder.id, kind === 'ITEM' ? 'ITEM' : 'CHARACTER')}>＋</button>
+            )}
             {onImport && (
               <button className="lib-mini" title="Importar imagem" onClick={() => onImport(kind, folder.id)}>⬆</button>
             )}
