@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { SceneDTO, TokenDTO, AssetFolderDTO, FolderKind, TokenKind } from '@tabletop/shared';
+import type { SceneDTO, TokenDTO, AssetFolderDTO, FolderKind, TokenKind, MapOverlayDTO } from '@tabletop/shared';
 import { foldersApi, buildFolderTree, type FolderNode } from '../lib/folders.js';
 
 interface Props {
@@ -7,12 +7,14 @@ interface Props {
   isGm: boolean;
   scenes: SceneDTO[];
   tokens: TokenDTO[];
+  overlays: MapOverlayDTO[];
   currentSceneId?: string;
   onOpenScene: (sceneId: string) => void;
   onCreateScene: (folderId: string | null) => void;
   onDeleteScene: (sceneId: string) => void;
   onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (tokenId: string) => void;
+  onDeleteOverlay: (overlayId: string) => void;
   // disparado quando o usuário pede para importar/subir uma imagem
   onImport?: (kind: FolderKind, folderId: string | null) => void;
 }
@@ -74,12 +76,14 @@ export function LibraryPanel(props: Props) {
           folderTree={buildFolderTree(folders.filter((f) => f.kind === meta.kind))}
           scenes={props.scenes}
           tokens={props.tokens}
+          overlays={props.overlays}
           currentSceneId={props.currentSceneId}
           onOpenScene={props.onOpenScene}
           onCreateScene={props.onCreateScene}
           onDeleteScene={props.onDeleteScene}
           onCreateToken={props.onCreateToken}
           onDeleteToken={props.onDeleteToken}
+          onDeleteOverlay={props.onDeleteOverlay}
           onImport={props.onImport}
           onAddFolder={addFolder}
           onRenameFolder={renameFolder}
@@ -96,12 +100,14 @@ function LibrarySection({
   folderTree,
   scenes,
   tokens,
+  overlays,
   currentSceneId,
   onOpenScene,
   onCreateScene,
   onDeleteScene,
   onCreateToken,
   onDeleteToken,
+  onDeleteOverlay,
   onImport,
   onAddFolder,
   onRenameFolder,
@@ -112,12 +118,14 @@ function LibrarySection({
   folderTree: FolderNode[];
   scenes: SceneDTO[];
   tokens: TokenDTO[];
+  overlays: MapOverlayDTO[];
   currentSceneId?: string;
   onOpenScene: (id: string) => void;
   onCreateScene: (folderId: string | null) => void;
   onDeleteScene: (id: string) => void;
   onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (id: string) => void;
+  onDeleteOverlay: (id: string) => void;
   onImport?: (kind: FolderKind, folderId: string | null) => void;
   onAddFolder: (kind: FolderKind, parentId: string | null) => void;
   onRenameFolder: (f: AssetFolderDTO) => void;
@@ -139,6 +147,7 @@ function LibrarySection({
   // itens sem pasta (folderId null) do tipo desta seção
   const looseScenes = isScene ? scenes.filter((s) => !s.folderId) : [];
   const looseTokens = isTokenLike ? sectionTokens.filter((t) => !t.folderId) : [];
+  const looseOverlays = isMap ? overlays.filter((o) => !o.folderId) : [];
 
   return (
     <section className="lib-section">
@@ -187,32 +196,40 @@ function LibrarySection({
           ))}
 
           {/* itens soltos (sem pasta) */}
-          {isScene
-            ? looseScenes.map((s) => (
-                <SceneRow
-                  key={s.id}
-                  scene={s}
-                  active={s.id === currentSceneId}
-                  isGm={isGm}
-                  onOpen={() => onOpenScene(s.id)}
-                  onDelete={() => onDeleteScene(s.id)}
-                />
-              ))
-            : looseTokens.map((t) => (
-                <TokenRow key={t.id} token={t} isGm={isGm} onDelete={() => onDeleteToken(t.id)} />
-              ))}
+          {isScene &&
+            looseScenes.map((s) => (
+              <SceneRow
+                key={s.id}
+                scene={s}
+                active={s.id === currentSceneId}
+                isGm={isGm}
+                onOpen={() => onOpenScene(s.id)}
+                onDelete={() => onDeleteScene(s.id)}
+              />
+            ))}
+          {isTokenLike &&
+            looseTokens.map((t) => (
+              <TokenRow key={t.id} token={t} isGm={isGm} onDelete={() => onDeleteToken(t.id)} />
+            ))}
+          {isMap &&
+            looseOverlays.map((o) => (
+              <OverlayRow key={o.id} overlay={o} isGm={isGm} onDelete={() => onDeleteOverlay(o.id)} />
+            ))}
 
-          {folderTree.length === 0 && looseScenes.length === 0 && looseTokens.length === 0 && (
-            <p className="muted lib-empty">
-              {isScene
-                ? 'Nenhuma cena ainda.'
-                : isMap
-                ? 'Mapas-overlay chegam na etapa de cenário + mapas.'
-                : isItem
-                ? 'Nenhum item ainda.'
-                : 'Nenhum token ainda.'}
-            </p>
-          )}
+          {folderTree.length === 0 &&
+            looseScenes.length === 0 &&
+            looseTokens.length === 0 &&
+            looseOverlays.length === 0 && (
+              <p className="muted lib-empty">
+                {isScene
+                  ? 'Nenhuma cena ainda.'
+                  : isMap
+                  ? 'Nenhum mapa ainda. Use ⬆ para carregar um mapa sobre a cena.'
+                  : isItem
+                  ? 'Nenhum item ainda.'
+                  : 'Nenhum token ainda.'}
+              </p>
+            )}
         </div>
       )}
     </section>
@@ -363,6 +380,19 @@ function TokenRow({ token, isGm, onDelete }: { token: TokenDTO; isGm: boolean; o
       </span>
       {isGm && (
         <button className="lib-mini danger" title="Remover token" onClick={onDelete}>🗑</button>
+      )}
+    </div>
+  );
+}
+
+function OverlayRow({ overlay, isGm, onDelete }: { overlay: MapOverlayDTO; isGm: boolean; onDelete: () => void }) {
+  return (
+    <div className="lib-item">
+      <span className="lib-item-name" title={overlay.name}>
+        {overlay.imageUrl ? <img src={overlay.imageUrl} alt="" className="lib-thumb" /> : '🧭'} {overlay.name}
+      </span>
+      {isGm && (
+        <button className="lib-mini danger" title="Remover mapa" onClick={onDelete}>🗑</button>
       )}
     </div>
   );

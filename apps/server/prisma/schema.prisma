@@ -200,6 +200,7 @@ model Scene {
 model MapOverlay {
   id         String   @id @default(cuid())
   sceneId    String
+  folderId   String?  // pasta de organização (kind=MAP) na biblioteca
   assetId    String?  // asset de imagem (opcional se usar imageUrl direto)
   imageUrl   String?  // URL resolvida da imagem do mapa
   name       String   @default("Mapa")

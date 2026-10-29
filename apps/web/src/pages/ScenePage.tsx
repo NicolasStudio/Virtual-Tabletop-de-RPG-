@@ -167,6 +167,7 @@ export function ScenePage() {
           name: niceName || 'Mapa',
           assetId: asset.id,
           imageUrl: url,
+          ...(dest.folderId ? { folderId: dest.folderId } : {}),
         });
         setCurrent((c) => (c ? { ...c, overlays: [...(c.overlays ?? []), overlay] } : c));
       } else {
@@ -256,9 +257,11 @@ export function ScenePage() {
           <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
           <span className="muted">snapping à grade</span>
         </label>
-        <button className="btn" onClick={() => setLibOpen((v) => !v)} aria-expanded={libOpen} title="Biblioteca de cenas, mapas, tokens e itens">
-          📚 Biblioteca
-        </button>
+        {isGm && (
+          <button className="btn" onClick={() => setLibOpen((v) => !v)} aria-expanded={libOpen} title="Biblioteca de cenas, mapas, tokens e itens">
+            📚 Biblioteca
+          </button>
+        )}
         <button className="btn" onClick={() => setDiceOpen((v) => !v)} aria-expanded={diceOpen}>
           🎲 Dados
         </button>
@@ -277,18 +280,20 @@ export function ScenePage() {
       )}
 
       <div className={`scene-workspace ${libOpen ? 'lib-open' : 'lib-collapsed'}`}>
-        {libOpen && (
+        {libOpen && isGm && (
           <LibraryPanel
             campaignId={campaignId}
             isGm={isGm}
             scenes={scenes}
             tokens={current?.tokens ?? []}
+            overlays={current?.overlays ?? []}
             currentSceneId={current?.scene.id}
             onOpenScene={loadScene}
             onCreateScene={createScene}
             onDeleteScene={deleteScene}
             onCreateToken={addToken}
             onDeleteToken={deleteToken}
+            onDeleteOverlay={deleteOverlay}
             onImport={importImage}
           />
         )}

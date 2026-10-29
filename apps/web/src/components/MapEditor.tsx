@@ -80,8 +80,10 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         draggable // pan ao arrastar o fundo
         onWheel={onWheel}
         onMouseDown={(e) => {
-          // clicar no fundo (stage) deseleciona
-          if (e.target === e.target.getStage()) {
+          // desseleciona só quando o clique cai no FUNDO (stage, cenário ou grade),
+          // nunca quando cai num token/mapa. Fundo é marcado com name="background".
+          const name = e.target?.name?.();
+          if (e.target === e.target.getStage() || name === 'background') {
             setSelectedId(null);
             setSelectedOverlayId(null);
           }
@@ -89,10 +91,10 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         style={{ background: '#0f0c08', borderRadius: 8, cursor: 'grab' }}
       >
         <Layer>
-          <Rect width={scene.width} height={scene.height} fill="#1b140c" />
+          <Rect name="background" width={scene.width} height={scene.height} fill="#1b140c" />
           {/* CENÁRIO = ambiente ao redor / fundo fixo */}
           {background && (
-            <KonvaImage image={background} width={scene.width} height={scene.height} listening={false} />
+            <KonvaImage name="background" image={background} width={scene.width} height={scene.height} />
           )}
           {/* MAPAS = overlays por cima da cena, redimensionáveis pelo GM */}
           {overlays.map((o) => (

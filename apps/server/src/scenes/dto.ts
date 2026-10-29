@@ -71,6 +71,7 @@ export class UpdateTokenDto {
 
 export class CreateMapOverlayDto {
   @IsOptional() @IsString() @MaxLength(120) name?: string;
+  @IsOptional() @IsString() folderId?: string;
   @IsOptional() @IsString() assetId?: string;
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsNumber() x?: number;

@@ -6,6 +6,7 @@ function toOverlayDTO(o: any): MapOverlayDTO {
   return {
     id: o.id,
     sceneId: o.sceneId,
+    folderId: o.folderId ?? null,
     assetId: o.assetId ?? null,
     imageUrl: o.imageUrl ?? null,
     name: o.name,
@@ -129,6 +130,7 @@ export class ScenesService {
       data: {
         sceneId,
         name: data.name ?? 'Mapa',
+        folderId: data.folderId ?? null,
         assetId: data.assetId ?? null,
         imageUrl: data.imageUrl ?? null,
         x: data.x ?? 0,

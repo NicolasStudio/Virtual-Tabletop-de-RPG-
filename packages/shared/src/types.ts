@@ -22,6 +22,7 @@ export interface AssetFolderDTO {
 export interface MapOverlayDTO {
   id: string;
   sceneId: string;
+  folderId?: string | null;
   assetId?: string | null;
   imageUrl?: string | null;
   name: string;
