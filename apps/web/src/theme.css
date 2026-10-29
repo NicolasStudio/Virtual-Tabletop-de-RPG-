@@ -613,14 +613,15 @@ input[type='number'] {
   width: 100%;
 }
 
-/* botão Encerrar combate */
+/* botão Encerrar combate: sólido vermelho, mesmo peso do 'Próximo turno' */
 .combat-end {
-  border-color: #e5737355 !important;
-  color: #e57373 !important;
+  background: #c0392b !important;
+  border-color: #c0392b !important;
+  color: #fff !important;
 }
 .combat-end:hover {
-  background: #e5737318 !important;
-  border-color: #e57373 !important;
+  background: #a93226 !important;
+  border-color: #a93226 !important;
 }
 
 

@@ -159,7 +159,7 @@ export function CombatTracker({ campaignId, isGm, tokens = [] }: Props) {
             <button className="btn sm" onClick={async () => { await combatApi.nextTurn(campaignId); reload(); }}>
               Próximo turno ▶
             </button>
-            <button className="btn ghost sm combat-end" onClick={async () => { await combatApi.end(campaignId); reload(); }}>
+            <button className="btn sm combat-end" onClick={async () => { await combatApi.end(campaignId); reload(); }}>
               Encerrar
             </button>
           </span>
