@@ -38,7 +38,6 @@ interface Props {
   snap: boolean;
   onTokenChange: (tokenId: string, data: Partial<TokenDTO>) => void;
   onOverlayChange: (overlayId: string, data: Partial<MapOverlayDTO>) => void;
-  onOverlayDelete: (overlayId: string) => void;
   fog: SceneFogDTO;
   fogPaintMode: 'reveal' | 'hide' | null; // quando != null, o GM está pintando névoa
   fogBrush: boolean; // true = pincel à mão livre; false = por célula
@@ -47,7 +46,7 @@ interface Props {
   onFogBrush: (dots: { x: number; y: number; r: number }[], mode: 'reveal' | 'hide') => void;
 }
 
-export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, onOverlayDelete, fog, fogPaintMode, fogBrush, brushSize, onFogPaint, onFogBrush }: Props) {
+export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, fog, fogPaintMode, fogBrush, brushSize, onFogPaint, onFogBrush }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -172,7 +171,8 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
           )}
           {/* MAPAS = overlays por cima da cena, redimensionáveis pelo GM */}
           {overlays.map((o) => (
-            (o.isHidden && !isGm) ? null : (
+            // fora da tela (Remover) não aparece; invisível só o GM vê
+            o.isOnMap === false || (o.isHidden && !isGm) ? null : (
             <MapOverlayShape
               key={o.id}
               overlay={o}
@@ -194,6 +194,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         </Layer>
         <Layer>
           {tokens.map((t) => {
+            if (t.isOnMap === false) return null; // tirado da tela (Remover): só na biblioteca
             if (t.isHidden && !isGm) return null; // jogador não vê token oculto
             const editable = canEditToken(t) && !t.isLocked;
             return (
@@ -251,8 +252,8 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         )}
       </Stage>
       {isGm && (() => {
-        const selToken = tokens.find((t) => t.id === selectedId);
-        const selOverlay = overlays.find((o) => o.id === selectedOverlayId);
+        const selToken = tokens.find((t) => t.id === selectedId && t.isOnMap !== false);
+        const selOverlay = overlays.find((o) => o.id === selectedOverlayId && o.isOnMap !== false);
         const sel = selToken ?? selOverlay;
         if (!sel) return null;
         const isOverlay = !!selOverlay;
@@ -280,11 +281,17 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
             >
               {locked ? '🔒 Travado' : '🔓 Livre'}
             </button>
-            {isOverlay && (
-              <button className="btn ghost sm" onClick={() => { onOverlayDelete(selOverlay!.id); setSelectedOverlayId(null); }}>
-                🗑 Remover
-              </button>
-            )}
+            <button
+              className="btn ghost sm"
+              onClick={() => {
+                apply({ isOnMap: false });
+                setSelectedOverlayId(null);
+                setSelectedId(null);
+              }}
+              title="Tira da tela; continua na biblioteca (clique nele lá para colocar de volta)"
+            >
+              🗑 Remover
+            </button>
           </div>
         );
       })()}

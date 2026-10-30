@@ -216,6 +216,7 @@ model MapOverlay {
   order      Int      @default(0)
   isLocked   Boolean  @default(false)
   isHidden   Boolean  @default(false) // oculto para jogadores (só GM vê)
+  isOnMap    Boolean  @default(true)  // false = tirado da tela (Remover), mas continua na biblioteca
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -275,6 +276,7 @@ model Token {
   layer       String   @default("tokens")
   isLocked    Boolean  @default(false)
   isHidden    Boolean  @default(false) // visível só para o GM
+  isOnMap     Boolean  @default(true)  // false = tirado da tela (Remover), mas continua na biblioteca
   groupId     String?
   // vida/recursos rápidos para a barra do token (a ficha completa fica em Character)
   stats       Json     @default("{}")

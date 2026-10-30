@@ -52,6 +52,17 @@ describe('ScenesService.getWithTokens — filtro de fog/ocultos', () => {
     const asPlayer = await pl.getWithTokens('c1', 's1', 'PLAYER');
     expect(asPlayer.tokens.map((t) => t.id)).toEqual(['t1']); // oculto removido no servidor
   });
+
+  it('token tirado da tela (Remover): GM ainda recebe (biblioteca); PLAYER não', async () => {
+    const tokens = [
+      { id: 't1', sceneId: 's1', name: 'Herói', isHidden: false, isOnMap: true, stats: {} },
+      { id: 't2', sceneId: 's1', name: 'Mala', isHidden: false, isOnMap: false, stats: {} },
+    ];
+    const asGm = await new ScenesService(makePrisma({ tokens })).getWithTokens('c1', 's1', 'GM');
+    expect(asGm.tokens.map((t) => [t.id, t.isOnMap])).toEqual([['t1', true], ['t2', false]]);
+    const asPlayer = await new ScenesService(makePrisma({ tokens })).getWithTokens('c1', 's1', 'PLAYER');
+    expect(asPlayer.tokens.map((t) => t.id)).toEqual(['t1']);
+  });
 });
 
 describe('ScenesService.updateToken — propriedade', () => {
@@ -88,6 +99,16 @@ describe('ScenesService.updateToken — propriedade', () => {
     expect(dataPassed).not.toHaveProperty('isHidden');
     expect(dataPassed).not.toHaveProperty('ownerUserId');
     expect(dataPassed.x).toBe(5);
+  });
+
+  it('só o GM tira/põe token na tela (isOnMap)', async () => {
+    const prisma = makePrisma({ token });
+    await new ScenesService(prisma).updateToken('c1', 't1', 'u1', 'PLAYER', { isOnMap: false });
+    expect(prisma.token.update.mock.calls[0][0].data).not.toHaveProperty('isOnMap');
+
+    const gmPrisma = makePrisma({ token });
+    await new ScenesService(gmPrisma).updateToken('c1', 't1', 'gm', 'GM', { isOnMap: false });
+    expect(gmPrisma.token.update.mock.calls[0][0].data).toEqual({ isOnMap: false });
   });
 
   it('token bloqueado não é movido por PLAYER', async () => {

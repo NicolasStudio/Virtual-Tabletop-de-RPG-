@@ -800,6 +800,10 @@ input[type='number'] {
 /* botões sólidos (selecionados) do menu de névoa: texto escuro legível sobre o dourado */
 .fog-menu .btn:not(.ghost):not(.fog-stop) { color: var(--accent-text) !important; }
 
+/* mapa, token ou item tirado da tela (Remover): continua na biblioteca, apagado; clique devolve */
+.lib-item.off-map .lib-item-name { opacity: 0.5; font-style: italic; }
+.lib-item.off-map .lib-item-name:hover { opacity: 1; }
+
 /* ===== Escolha de tema (perfil) ===== */
 .theme-list {
   display: grid;
