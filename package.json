@@ -14,6 +14,8 @@
     "build:shared": "npm run build -w @tabletop/shared",
     "dev:server": "npm run dev -w @tabletop/server",
     "dev:web": "npm run dev -w @tabletop/web",
+    "mesa": "npm run build:shared && npm run build -w @tabletop/web && npm run preview -w @tabletop/web",
+    "tunel": "cloudflared tunnel run tabletop",
     "build": "npm run build -w @tabletop/shared && npm run build -w @tabletop/server && npm run build -w @tabletop/web",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
