@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@3d-dice/dice-box-threejs": "^0.0.12",
     "@tabletop/shared": "*",
     "konva": "^9.3.16",
     "react": "^18.3.1",

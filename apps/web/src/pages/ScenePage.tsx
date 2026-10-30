@@ -9,6 +9,7 @@ import { MapEditor } from '../components/MapEditor.js';
 import { DicePanel } from '../components/DicePanel.js';
 import { CombatTracker } from '../components/CombatTracker.js';
 import { LibraryPanel } from '../components/LibraryPanel.js';
+import { Dice3D } from '../components/Dice3D.js';
 import { useRealtimeScene } from '../hooks/useRealtimeScene.js';
 
 // Acrescenta ou atualiza pelo id. O mesmo token/mapa chega duas vezes ao ser criado:
@@ -547,6 +548,8 @@ export function ScenePage() {
           </aside>
         </>
       )}
+
+      <Dice3D campaignId={campaignId} />
     </main>
   );
 }

@@ -100,15 +100,17 @@
   --overlay: rgba(0, 0, 0, 0.7);
 }
 
-/* Conhecimento é o tema claro: pergaminho, caixas douradas e texto escuro */
+/* Conhecimento é o tema claro: pergaminho, painéis brancos com bordas douradas
+   e texto escuro (na Ficha as caixas são douradas; aqui, com cards e gavetas
+   grandes, o dourado fica só nos detalhes) */
 :root[data-tema='conhecimento'],
 [data-tema='conhecimento'] {
   --bg: #faf7f0;
-  --bg-elev: #ffffff;
-  --panel: #d9b04a;
-  --border: #a8862e;
+  --bg-elev: #f5ecd6;
+  --panel: #fffcf5;
+  --border: #d4b25c;
   --text: #2b2110;
-  --text-dim: #3f3318;
+  --text-dim: #6b5a35;
   --accent: #4a3300;
   --accent-strong: #4a3300;
   --accent-text: #ffffff;
@@ -466,6 +468,18 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 @media (max-width: 860px) {
   .library { width: calc(100% - 16px); }
 }
+/* dados 3D: camada transparente por cima de tudo, sem pegar cliques */
+.dice-3d {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.dice-3d.show { opacity: 1; }
+.dice-3d canvas { display: block; }
+
 /* biblioteca como drawer à esquerda (mesmo visual de Dados / Combate) */
 .lib-drawer {
   left: 0;
