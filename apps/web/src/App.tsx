@@ -9,9 +9,6 @@ import {
 } from 'react-router-dom';
 import { useAuth } from './store/auth.js';
 import { LoginPage } from './pages/LoginPage.js';
-import { RegisterPage } from './pages/RegisterPage.js';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage.js';
-import { ResetPasswordPage } from './pages/ResetPasswordPage.js';
 import { ProfilePage } from './pages/ProfilePage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { CampaignPage } from './pages/CampaignPage.js';
@@ -64,10 +61,8 @@ export function App() {
       <div className="app-shell">
         <TopBar />
         <Routes>
+          {/* Cadastro e senha ficam na Ficha Ordem Paranormal (login pela Ficha) */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot" element={<ForgotPasswordPage />} />
-          <Route path="/reset" element={<ResetPasswordPage />} />
           <Route
             path="/"
             element={

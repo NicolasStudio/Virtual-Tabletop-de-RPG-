@@ -1,7 +1,8 @@
-import { io, type Socket } from 'socket.io-client';
+import { io, type ManagerOptions, type Socket, type SocketOptions } from 'socket.io-client';
 import { getAccessToken } from './api.js';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:3001';
+// Vazio = mesma origem do app (o Vite repassa /socket.io para o servidor)
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || undefined;
 
 let socket: Socket | null = null;
 
@@ -12,14 +13,15 @@ let socket: Socket | null = null;
  */
 export function getSocket(): Socket {
   if (socket) return socket;
-  socket = io(SOCKET_URL, {
+  const options: Partial<ManagerOptions & SocketOptions> = {
     autoConnect: true,
     transports: ['websocket'],
     auth: (cb) => cb({ token: getAccessToken() }),
     reconnection: true,
     reconnectionDelay: 500,
     reconnectionDelayMax: 5000,
-  });
+  };
+  socket = SOCKET_URL ? io(SOCKET_URL, options) : io(options);
   return socket;
 }
 

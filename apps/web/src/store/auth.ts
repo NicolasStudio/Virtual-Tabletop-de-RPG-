@@ -13,6 +13,12 @@ interface AuthState {
   clearError: () => void;
 }
 
+// Restauração de sessão em andamento. O refresh token é rotativo e o servidor
+// encerra todas as sessões se um token já trocado for reusado: duas chamadas
+// simultâneas (ex.: o StrictMode do React roda o efeito duas vezes) precisam
+// compartilhar a mesma requisição.
+let bootstrapping: Promise<void> | null = null;
+
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   status: 'idle',
@@ -50,14 +56,19 @@ export const useAuth = create<AuthState>((set) => ({
     set({ user: null, status: 'anon' });
   },
 
-  bootstrap: async () => {
-    set({ status: 'loading' });
-    try {
-      const { accessToken, user } = await authApi.refresh();
-      setAccessToken(accessToken);
-      set({ user, status: 'authed' });
-    } catch {
-      set({ user: null, status: 'anon' });
-    }
+  bootstrap: () => {
+    bootstrapping ??= (async () => {
+      set({ status: 'loading' });
+      try {
+        const { accessToken, user } = await authApi.refresh();
+        setAccessToken(accessToken);
+        set({ user, status: 'authed' });
+      } catch {
+        set({ user: null, status: 'anon' });
+      }
+    })().finally(() => {
+      bootstrapping = null;
+    });
+    return bootstrapping;
   },
 }));
