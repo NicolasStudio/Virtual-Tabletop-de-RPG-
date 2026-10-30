@@ -1,11 +1,13 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '../store/auth.js';
 import { api } from '../lib/api.js';
+import { THEMES, currentTheme, setTheme } from '../lib/theme.js';
 
 export function ProfilePage() {
   const { user, logout } = useAuth();
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [saved, setSaved] = useState(false);
+  const [theme, setThemeState] = useState(currentTheme());
 
   useEffect(() => {
     setDisplayName(user?.displayName ?? '');
@@ -45,12 +47,36 @@ export function ProfilePage() {
         </button>
       </div>
 
+      {/* Tema: o mesmo da Ficha ao entrar por ela; aqui dá para trocar sem voltar lá */}
       <div className="card" style={{ marginTop: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Próximas fases</h3>
-        <p className="muted">
-          Autenticação concluída. A seguir: campanhas e salas (Fase 2), depois
-          mapas e tokens (Fase 3). Veja <code>docs/TASKS.md</code>.
+        <h3 style={{ marginTop: 0 }}>Tema</h3>
+        <p className="muted" style={{ margin: 0 }}>
+          Ao entrar pela Ficha, o Tabletop usa o tema escolhido lá.
         </p>
+        <div className="theme-list">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className="theme-option"
+              aria-pressed={theme === t.id}
+              onClick={() => {
+                setTheme(t.id);
+                setThemeState(t.id);
+              }}
+            >
+              <span className="theme-swatch" data-tema={t.id} aria-hidden="true">
+                <span className="theme-swatch-box">
+                  <span className="theme-swatch-accent" />
+                </span>
+              </span>
+              <span className="theme-text">
+                <strong>{t.name}</strong>
+                <small>{t.description}</small>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </main>
   );
