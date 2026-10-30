@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Group, Rect, Text, Transformer, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import type { TokenDTO } from '@tabletop/shared';
+import { selectionGlow, transformerStyle } from './selectionStyle.js';
 
 // hook simples: carrega um HTMLImageElement a partir de uma URL (ou null)
 function useHtmlImage(url?: string | null): HTMLImageElement | null {
@@ -111,18 +112,14 @@ export function TokenShape({
       >
         {image ? (
           <>
-            <KonvaImage image={image} width={token.width} height={token.height} cornerRadius={6} />
-            {/* sem moldura: a imagem aparece limpa; o contorno só marca o token selecionado */}
-            {selected && (
-              <Rect
-                width={token.width}
-                height={token.height}
-                cornerRadius={6}
-                stroke="#e4bf63"
-                strokeWidth={3}
-                listening={false}
-              />
-            )}
+            {/* sem moldura: selecionado, ganha um brilho em volta da silhueta */}
+            <KonvaImage
+              image={image}
+              width={token.width}
+              height={token.height}
+              cornerRadius={6}
+              {...(selected ? selectionGlow : {})}
+            />
           </>
         ) : (
           <>
@@ -131,8 +128,7 @@ export function TokenShape({
               height={token.height}
               cornerRadius={6}
               fill="#3a2d1a"
-              stroke={selected ? '#e4bf63' : undefined}
-              strokeWidth={selected ? 3 : 0}
+              {...(selected ? selectionGlow : {})}
             />
             <Text
               text={token.name}
@@ -153,7 +149,7 @@ export function TokenShape({
         <Transformer
           ref={trRef}
           rotateEnabled
-          keepRatio={false}
+          {...transformerStyle}
           boundBoxFunc={(oldBox, newBox) => (newBox.width < 10 || newBox.height < 10 ? oldBox : newBox)}
         />
       )}
