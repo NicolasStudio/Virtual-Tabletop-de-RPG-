@@ -59,7 +59,9 @@ export class TokenService {
    * Reuso de token revogado/expirado => 401 (e, por segurança, revoga todos
    * os refresh do usuário — possível vazamento).
    */
-  async rotateRefresh(raw: string): Promise<{ userId: string; raw: string; expiresAt: Date }> {
+  async rotateRefresh(raw: string | undefined): Promise<{ userId: string; raw: string; expiresAt: Date }> {
+    // sem cookie (nunca entrou ou já saiu): não logado, não erro do servidor
+    if (!raw) throw new UnauthorizedException('Sessão inválida. Faça login novamente.');
     const tokenHash = this.hash(raw);
     const existing = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
 
