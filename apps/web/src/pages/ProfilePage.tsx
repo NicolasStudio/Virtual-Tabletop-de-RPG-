@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth.js';
 import { api } from '../lib/api.js';
 import { THEMES, currentTheme, setTheme } from '../lib/theme.js';
@@ -8,6 +9,9 @@ export function ProfilePage() {
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [saved, setSaved] = useState(false);
   const [theme, setThemeState] = useState(currentTheme());
+  const nav = useNavigate();
+  // tela de onde o jogador clicou no nome (menu, campanha, tabuleiro...); sem ela, o menu
+  const from = (useLocation().state as { from?: string } | null)?.from ?? '/';
 
   useEffect(() => {
     setDisplayName(user?.displayName ?? '');
@@ -22,6 +26,10 @@ export function ProfilePage() {
 
   return (
     <main className="container">
+      <button className="btn ghost" type="button" onClick={() => nav(from)} style={{ marginBottom: 16 }}>
+        ← Voltar
+      </button>
+
       <div className="card">
         <h1 style={{ marginTop: 0 }}>Olá, {user?.displayName}</h1>
         <p className="muted">{user?.email}</p>
@@ -40,11 +48,6 @@ export function ProfilePage() {
             )}
           </div>
         </form>
-
-        <hr style={{ borderColor: 'var(--border)', margin: '24px 0' }} />
-        <button className="btn" onClick={() => logout()} style={{ background: 'var(--danger)', color: '#fff' }}>
-          Sair
-        </button>
       </div>
 
       {/* Tema: o mesmo da Ficha ao entrar por ela; aqui dá para trocar sem voltar lá */}
@@ -77,6 +80,13 @@ export function ProfilePage() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Sair no fim da página */}
+      <div style={{ marginTop: 24 }}>
+        <button className="btn danger" type="button" onClick={() => logout()}>
+          Sair
+        </button>
       </div>
     </main>
   );

@@ -139,9 +139,9 @@ export function CampaignPage() {
               Abra a cena para manipular o mapa, a grade e os tokens.
             </p>
           </div>
-          <Link to={`/campaigns/${id}/scene`} className="btn" style={{ marginLeft: 'auto' }}>
+          <button className="btn" type="button" style={{ marginLeft: 'auto' }} onClick={() => nav(`/campaigns/${id}/scene`)}>
             Abrir mapa
-          </Link>
+          </button>
         </div>
       </div>
     </main>

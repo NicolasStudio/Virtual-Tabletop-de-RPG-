@@ -17,6 +17,7 @@ const ScenePage = lazy(() => import('./pages/ScenePage.js').then((m) => ({ defau
 
 function TopBar() {
   const { status, user } = useAuth();
+  const loc = useLocation();
   return (
     <header className="topbar">
       <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
@@ -26,7 +27,13 @@ function TopBar() {
       <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
         {status === 'authed' ? (
           <>
-            <Link to="/profile" className="badge ok" style={{ textDecoration: 'none' }}>
+            {/* lembra a tela atual: o Voltar do perfil retorna para ela */}
+            <Link
+              to="/profile"
+              state={loc.pathname === '/profile' ? loc.state : { from: loc.pathname + loc.search }}
+              className="badge ok"
+              style={{ textDecoration: 'none' }}
+            >
               {user?.displayName}
             </Link>
           </>
