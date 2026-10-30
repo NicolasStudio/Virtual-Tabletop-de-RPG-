@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -38,4 +38,22 @@ export class ResetPasswordDto {
   @MinLength(8)
   @MaxLength(200)
   password!: string;
+}
+
+/** Enviado pela Ficha (formulário) ao abrir o Tabletop. */
+export class FirebaseLoginDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(4096)
+  idToken!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  theme?: string;
 }

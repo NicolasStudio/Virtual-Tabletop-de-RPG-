@@ -112,14 +112,17 @@ export function TokenShape({
         {image ? (
           <>
             <KonvaImage image={image} width={token.width} height={token.height} cornerRadius={6} />
-            <Rect
-              width={token.width}
-              height={token.height}
-              cornerRadius={6}
-              stroke={selected ? '#e4bf63' : '#c9a24b'}
-              strokeWidth={selected ? 3 : 1.5}
-              listening={false}
-            />
+            {/* sem moldura: a imagem aparece limpa; o contorno só marca o token selecionado */}
+            {selected && (
+              <Rect
+                width={token.width}
+                height={token.height}
+                cornerRadius={6}
+                stroke="#e4bf63"
+                strokeWidth={3}
+                listening={false}
+              />
+            )}
           </>
         ) : (
           <>
@@ -128,8 +131,8 @@ export function TokenShape({
               height={token.height}
               cornerRadius={6}
               fill="#3a2d1a"
-              stroke={selected ? '#e4bf63' : '#c9a24b'}
-              strokeWidth={selected ? 3 : 1.5}
+              stroke={selected ? '#e4bf63' : undefined}
+              strokeWidth={selected ? 3 : 0}
             />
             <Text
               text={token.name}

@@ -1,59 +1,31 @@
-import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../store/auth.js';
+import { useSearchParams } from 'react-router-dom';
+
+// O Tabletop usa a conta da Ficha Ordem Paranormal: o login é feito lá, e a
+// página tabletop.html da Ficha abre a sessão aqui (POST /api/auth/firebase).
+const FICHA_URL =
+  import.meta.env.VITE_FICHA_URL ?? 'https://nicolasstudio.github.io/Ficha_ordem/tabletop.html';
 
 export function LoginPage() {
-  const { login, error, status, clearError } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const nav = useNavigate();
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    clearError();
-    try {
-      await login(email, password);
-      nav('/');
-    } catch {
-      /* erro já no store */
-    }
-  }
+  const [params] = useSearchParams();
+  const error = params.get('erro');
 
   return (
     <div className="auth-wrap">
-      <form className="card auth-card" onSubmit={onSubmit} aria-labelledby="login-h">
+      <div className="card auth-card" aria-labelledby="login-h">
         <h1 id="login-h">Entrar</h1>
         {error && (
           <p className="badge err" role="alert">
             {error}
           </p>
         )}
-        <label htmlFor="email">E-mail</label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <label htmlFor="pw">Senha</label>
-        <input
-          id="pw"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button className="btn" type="submit" disabled={status === 'loading'}>
-          {status === 'loading' ? 'Entrando…' : 'Entrar'}
-        </button>
         <p className="muted">
-          Sem conta? <Link to="/register">Cadastre-se</Link> ·{' '}
-          <Link to="/forgot">Esqueci a senha</Link>
+          O Tabletop usa a mesma conta da <strong>Ficha Ordem Paranormal</strong>. Entre na Ficha e
+          escolha <strong>Tabletop</strong> no menu ☰.
         </p>
-      </form>
+        <button className="btn" type="button" onClick={() => window.location.assign(FICHA_URL)}>
+          Entrar pela Ficha
+        </button>
+      </div>
     </div>
   );
 }

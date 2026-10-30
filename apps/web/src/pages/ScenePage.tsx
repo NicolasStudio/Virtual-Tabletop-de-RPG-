@@ -11,6 +11,14 @@ import { CombatTracker } from '../components/CombatTracker.js';
 import { LibraryPanel } from '../components/LibraryPanel.js';
 import { useRealtimeScene } from '../hooks/useRealtimeScene.js';
 
+// Acrescenta ou atualiza pelo id. O mesmo token/mapa chega duas vezes ao ser criado:
+// pela resposta da API e pelo aviso em tempo real (socket), em qualquer ordem.
+function upsertById<T extends { id: string }>(list: T[], item: T): T[] {
+  return list.some((x) => x.id === item.id)
+    ? list.map((x) => (x.id === item.id ? { ...x, ...item } : x))
+    : [...list, item];
+}
+
 export function ScenePage() {
   const { campaignId = '' } = useParams();
   const { user } = useAuth();
@@ -44,13 +52,7 @@ export function ScenePage() {
   const applyAuthoritativeToken = useCallback((token: TokenDTO) => {
     setCurrent((c) => {
       if (!c || c.scene.id !== token.sceneId) return c;
-      const exists = c.tokens.some((t) => t.id === token.id);
-      return {
-        ...c,
-        tokens: exists
-          ? c.tokens.map((t) => (t.id === token.id ? token : t))
-          : [...c.tokens, token],
-      };
+      return { ...c, tokens: upsertById(c.tokens, token) };
     });
   }, []);
 
@@ -90,13 +92,7 @@ export function ScenePage() {
         setCurrent((c) => {
           if (!c) return c;
           if (action === 'delete') return { ...c, overlays: c.overlays.filter((o) => o.id !== overlay.id) };
-          const exists = c.overlays.some((o) => o.id === overlay.id);
-          return {
-            ...c,
-            overlays: exists
-              ? c.overlays.map((o) => (o.id === overlay.id ? { ...o, ...overlay } : o))
-              : [...c.overlays, overlay],
-          };
+          return { ...c, overlays: upsertById(c.overlays, overlay) };
         }),
       onFog: (sceneId, fog) =>
         setCurrent((c) => (c && c.scene.id === sceneId ? { ...c, fog } : c)),
@@ -150,7 +146,7 @@ export function ScenePage() {
       kind,
       ...(folderId ? { folderId } : {}),
     });
-    setCurrent((c) => (c ? { ...c, tokens: [...c.tokens, token] } : c));
+    setCurrent((c) => (c ? { ...c, tokens: upsertById(c.tokens, token) } : c));
   }
 
   async function deleteScene(sceneId: string) {
@@ -219,7 +215,7 @@ export function ScenePage() {
           imageUrl: url,
           ...(dest.folderId ? { folderId: dest.folderId } : {}),
         });
-        setCurrent((c) => (c ? { ...c, overlays: [...(c.overlays ?? []), overlay] } : c));
+        setCurrent((c) => (c ? { ...c, overlays: upsertById(c.overlays ?? [], overlay) } : c));
       } else {
         // TOKEN / ITEM: cria um token com a imagem e nome derivado do arquivo
         if (!current) {
@@ -237,7 +233,7 @@ export function ScenePage() {
           kind: FOLDER_TO_TOKEN_KIND[dest.kind] ?? 'CHARACTER',
           ...(dest.folderId ? { folderId: dest.folderId } : {}),
         });
-        setCurrent((c) => (c ? { ...c, tokens: [...c.tokens, token] } : c));
+        setCurrent((c) => (c ? { ...c, tokens: upsertById(c.tokens, token) } : c));
       }
     } catch (err: any) {
       setError(err?.message ?? 'Falha no upload da imagem.');
@@ -471,6 +467,8 @@ export function ScenePage() {
             onCreateToken={addToken}
             onDeleteToken={deleteToken}
             onDeleteOverlay={deleteOverlay}
+            onPlaceOverlay={(overlayId) => onOverlayChange(overlayId, { isOnMap: true })}
+            onPlaceToken={(tokenId) => onTokenChange(tokenId, { isOnMap: true })}
             onImport={importImage}
           />
         )}
@@ -486,7 +484,6 @@ export function ScenePage() {
               snap={snap}
               onTokenChange={onTokenChange}
               onOverlayChange={onOverlayChange}
-              onOverlayDelete={deleteOverlay}
               fog={current.fog}
               fogPaintMode={isGm ? fogMode : null}
               fogBrush={fogBrush}

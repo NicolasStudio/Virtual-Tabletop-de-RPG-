@@ -34,6 +34,7 @@ export interface MapOverlayDTO {  id: string;
   order: number;
   isLocked: boolean;
   isHidden?: boolean;
+  isOnMap?: boolean; // false = fora da tela (continua na biblioteca da cena)
 }
 
 // Névoa de guerra por células (modelo A). Para o jogador, o servidor envia
@@ -102,6 +103,7 @@ export interface TokenDTO {
   layer: string;
   isLocked: boolean;
   isHidden: boolean; // o servidor remove tokens ocultos do payload de jogadores
+  isOnMap?: boolean; // false = fora da tela (continua na biblioteca da cena)
   groupId?: string | null;
   stats: Record<string, unknown>;
 }

@@ -84,6 +84,37 @@ npm run dev:server              # API + Socket.IO em http://localhost:3001
 npm run dev:web                 # SPA em http://localhost:5173
 ```
 
+O app (5173) repassa `/api` e `/socket.io` para o servidor (3001): tudo fica
+num endereço só. Abra sempre pelo endereço do app.
+
+## Login pela Ficha Ordem Paranormal
+
+O Tabletop não tem cadastro nem senha próprios: usa a conta da Ficha (Firebase).
+
+1. Na Ficha, menu ☰ → **Tabletop** abre a página `tabletop.html` numa nova guia.
+2. Ela consulta `/api/health`. Desligado → mostra "offline" e tenta de novo a
+   cada 15 s (entra sozinha quando o mestre ligar). Ligado → envia o login do
+   Firebase para `POST /api/auth/firebase`, que confere o token com as chaves
+   públicas do Google e abre a sessão.
+3. Na primeira vez cria a conta do Tabletop com o nome do cadastro da Ficha;
+   o tema da Ficha (Clássico, Sangue, Morte, Conhecimento, Energia) vem junto.
+
+Configuração (`.env`): `FIREBASE_PROJECT_ID` e `FICHA_ORIGINS` (ver
+`.env.example`). O endereço do Tabletop fica na Ficha, em `Js/tabletopConfig.js`.
+
+## Jogadores de fora (Cloudflare Tunnel)
+
+Com o servidor e o app ligados, publique **só a porta do app**:
+
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+
+O endereço `https://….trycloudflare.com` gerado já é aceito pelo Vite. Para um
+domínio próprio, coloque-o em `TABLETOP_HOSTS`. Depois, atualize
+`Js/tabletopConfig.js` na Ficha com esse endereço. Com HTTPS, use
+`COOKIE_SECURE=true` e segredos JWT fortes no `.env`.
+
 ## Testes
 
 ```bash

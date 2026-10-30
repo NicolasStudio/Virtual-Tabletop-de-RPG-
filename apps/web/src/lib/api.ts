@@ -2,7 +2,9 @@
 // O refresh token NUNCA toca o JS (cookie httpOnly) — só o access fica em memória.
 import type { PublicUser } from '@tabletop/shared';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+// Vazio = mesma origem do app: em dev o Vite repassa /api para o servidor (vite.config.ts),
+// o que permite publicar tudo num endereço só (ex.: túnel do Cloudflare).
+const API = import.meta.env.VITE_API_URL ?? '';
 export const API_BASE = API;
 
 let accessToken: string | null = null;

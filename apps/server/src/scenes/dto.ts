@@ -62,6 +62,7 @@ export class UpdateTokenDto {
   @IsOptional() @IsNumber() rotation?: number;
   @IsOptional() @IsBoolean() isLocked?: boolean;
   @IsOptional() @IsBoolean() isHidden?: boolean;
+  @IsOptional() @IsBoolean() isOnMap?: boolean;
   @IsOptional() @IsString() layer?: string;
   @IsOptional() @IsString() imageAssetId?: string;
   @IsOptional() @IsString() imageUrl?: string;
@@ -93,4 +94,5 @@ export class UpdateMapOverlayDto {
   @IsOptional() @IsInt() order?: number;
   @IsOptional() @IsBoolean() isLocked?: boolean;
   @IsOptional() @IsBoolean() isHidden?: boolean;
+  @IsOptional() @IsBoolean() isOnMap?: boolean;
 }

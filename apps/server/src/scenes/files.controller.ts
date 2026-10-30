@@ -34,6 +34,8 @@ export class AssetsController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('Nenhum arquivo enviado.');
+    // O multer entrega o nome do arquivo em latin1: "porão.png" chegaria como "porÃ£o.png"
+    file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
     const stored = await this.storage.save(file.buffer, file.mimetype, file.originalname);
     const asset = await this.prisma.asset.create({
       data: {

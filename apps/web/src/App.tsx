@@ -9,9 +9,6 @@ import {
 } from 'react-router-dom';
 import { useAuth } from './store/auth.js';
 import { LoginPage } from './pages/LoginPage.js';
-import { RegisterPage } from './pages/RegisterPage.js';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage.js';
-import { ResetPasswordPage } from './pages/ResetPasswordPage.js';
 import { ProfilePage } from './pages/ProfilePage.js';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { CampaignPage } from './pages/CampaignPage.js';
@@ -20,6 +17,7 @@ const ScenePage = lazy(() => import('./pages/ScenePage.js').then((m) => ({ defau
 
 function TopBar() {
   const { status, user } = useAuth();
+  const loc = useLocation();
   return (
     <header className="topbar">
       <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
@@ -29,7 +27,13 @@ function TopBar() {
       <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
         {status === 'authed' ? (
           <>
-            <Link to="/profile" className="badge ok" style={{ textDecoration: 'none' }}>
+            {/* lembra a tela atual: o Voltar do perfil retorna para ela */}
+            <Link
+              to="/profile"
+              state={loc.pathname === '/profile' ? loc.state : { from: loc.pathname + loc.search }}
+              className="badge ok"
+              style={{ textDecoration: 'none' }}
+            >
               {user?.displayName}
             </Link>
           </>
@@ -64,10 +68,8 @@ export function App() {
       <div className="app-shell">
         <TopBar />
         <Routes>
+          {/* Cadastro e senha ficam na Ficha Ordem Paranormal (login pela Ficha) */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot" element={<ForgotPasswordPage />} />
-          <Route path="/reset" element={<ResetPasswordPage />} />
           <Route
             path="/"
             element={

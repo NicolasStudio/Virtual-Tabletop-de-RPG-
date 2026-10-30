@@ -15,6 +15,8 @@ interface Props {
   onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (tokenId: string) => void;
   onDeleteOverlay: (overlayId: string) => void;
+  onPlaceOverlay: (overlayId: string) => void; // coloca de volta na tela um mapa removido
+  onPlaceToken: (tokenId: string) => void; // idem para tokens e itens
   // disparado quando o usuário pede para importar/subir uma imagem
   onImport?: (kind: FolderKind, folderId: string | null) => void;
 }
@@ -84,6 +86,8 @@ export function LibraryPanel(props: Props) {
           onCreateToken={props.onCreateToken}
           onDeleteToken={props.onDeleteToken}
           onDeleteOverlay={props.onDeleteOverlay}
+          onPlaceOverlay={props.onPlaceOverlay}
+          onPlaceToken={props.onPlaceToken}
           onImport={props.onImport}
           onAddFolder={addFolder}
           onRenameFolder={renameFolder}
@@ -108,6 +112,8 @@ function LibrarySection({
   onCreateToken,
   onDeleteToken,
   onDeleteOverlay,
+  onPlaceOverlay,
+  onPlaceToken,
   onImport,
   onAddFolder,
   onRenameFolder,
@@ -126,6 +132,8 @@ function LibrarySection({
   onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (id: string) => void;
   onDeleteOverlay: (id: string) => void;
+  onPlaceOverlay: (id: string) => void;
+  onPlaceToken: (id: string) => void;
   onImport?: (kind: FolderKind, folderId: string | null) => void;
   onAddFolder: (kind: FolderKind, parentId: string | null) => void;
   onRenameFolder: (f: AssetFolderDTO) => void;
@@ -182,12 +190,16 @@ function LibrarySection({
               kind={meta.kind}
               scenes={scenes}
               tokens={sectionTokens}
+              overlays={isMap ? overlays : []}
               currentSceneId={currentSceneId}
               onOpenScene={onOpenScene}
               onCreateScene={onCreateScene}
               onDeleteScene={onDeleteScene}
               onCreateToken={onCreateToken}
               onDeleteToken={onDeleteToken}
+              onDeleteOverlay={onDeleteOverlay}
+              onPlaceOverlay={onPlaceOverlay}
+              onPlaceToken={onPlaceToken}
               onImport={onImport}
               onAddFolder={onAddFolder}
               onRenameFolder={onRenameFolder}
@@ -209,11 +221,11 @@ function LibrarySection({
             ))}
           {isTokenLike &&
             looseTokens.map((t) => (
-              <TokenRow key={t.id} token={t} isGm={isGm} onDelete={() => onDeleteToken(t.id)} />
+              <TokenRow key={t.id} token={t} isGm={isGm} onPlace={() => onPlaceToken(t.id)} onDelete={() => onDeleteToken(t.id)} />
             ))}
           {isMap &&
             looseOverlays.map((o) => (
-              <OverlayRow key={o.id} overlay={o} isGm={isGm} onDelete={() => onDeleteOverlay(o.id)} />
+              <OverlayRow key={o.id} overlay={o} isGm={isGm} onPlace={() => onPlaceOverlay(o.id)} onDelete={() => onDeleteOverlay(o.id)} />
             ))}
 
           {folderTree.length === 0 &&
@@ -243,12 +255,16 @@ function LibraryFolder({
   kind,
   scenes,
   tokens,
+  overlays,
   currentSceneId,
   onOpenScene,
   onCreateScene,
   onDeleteScene,
   onCreateToken,
   onDeleteToken,
+  onDeleteOverlay,
+  onPlaceOverlay,
+  onPlaceToken,
   onImport,
   onAddFolder,
   onRenameFolder,
@@ -260,12 +276,16 @@ function LibraryFolder({
   kind: FolderKind;
   scenes: SceneDTO[];
   tokens: TokenDTO[];
+  overlays: MapOverlayDTO[];
   currentSceneId?: string;
   onOpenScene: (id: string) => void;
   onCreateScene: (folderId: string | null) => void;
   onDeleteScene: (id: string) => void;
   onCreateToken: (folderId: string | null, kind?: TokenKind) => void;
   onDeleteToken: (id: string) => void;
+  onDeleteOverlay: (id: string) => void;
+  onPlaceOverlay: (id: string) => void;
+  onPlaceToken: (id: string) => void;
   onImport?: (kind: FolderKind, folderId: string | null) => void;
   onAddFolder: (kind: FolderKind, parentId: string | null) => void;
   onRenameFolder: (f: AssetFolderDTO) => void;
@@ -276,6 +296,7 @@ function LibraryFolder({
   const isTokenLike = kind === 'TOKEN' || kind === 'ITEM';
   const childScenes = isScene ? scenes.filter((s) => s.folderId === folder.id) : [];
   const childTokens = isTokenLike ? tokens.filter((t) => t.folderId === folder.id) : [];
+  const childOverlays = kind === 'MAP' ? overlays.filter((o) => o.folderId === folder.id) : [];
 
   return (
     <div className="lib-folder" style={{ marginLeft: depth * 12 }}>
@@ -312,12 +333,16 @@ function LibraryFolder({
               kind={kind}
               scenes={scenes}
               tokens={tokens}
+              overlays={overlays}
               currentSceneId={currentSceneId}
               onOpenScene={onOpenScene}
               onCreateScene={onCreateScene}
               onDeleteScene={onDeleteScene}
               onCreateToken={onCreateToken}
               onDeleteToken={onDeleteToken}
+              onDeleteOverlay={onDeleteOverlay}
+              onPlaceOverlay={onPlaceOverlay}
+              onPlaceToken={onPlaceToken}
               onImport={onImport}
               onAddFolder={onAddFolder}
               onRenameFolder={onRenameFolder}
@@ -337,8 +362,11 @@ function LibraryFolder({
                 />
               ))
             : childTokens.map((t) => (
-                <TokenRow key={t.id} token={t} isGm={isGm} onDelete={() => onDeleteToken(t.id)} />
+                <TokenRow key={t.id} token={t} isGm={isGm} onPlace={() => onPlaceToken(t.id)} onDelete={() => onDeleteToken(t.id)} />
               ))}
+          {childOverlays.map((o) => (
+            <OverlayRow key={o.id} overlay={o} isGm={isGm} onPlace={() => onPlaceOverlay(o.id)} onDelete={() => onDeleteOverlay(o.id)} />
+          ))}
         </div>
       )}
     </div>
@@ -370,29 +398,66 @@ function SceneRow({
   );
 }
 
-function TokenRow({ token, isGm, onDelete }: { token: TokenDTO; isGm: boolean; onDelete: () => void }) {
+function TokenRow({
+  token,
+  isGm,
+  onPlace,
+  onDelete,
+}: {
+  token: TokenDTO;
+  isGm: boolean;
+  onPlace: () => void;
+  onDelete: () => void;
+}) {
   const kindIcon =
     token.kind === 'MONSTER' ? '👹' : token.kind === 'NPC' ? '🧑' : token.kind === 'ITEM' ? '💎' : '🛡️';
+  // fora da tela (botão Remover do mapa): aparece apagado; o GM clica para colocar de volta
+  const offMap = token.isOnMap === false;
+  const what = token.kind === 'ITEM' ? 'item' : 'token';
   return (
-    <div className="lib-item">
-      <span className="lib-item-name" title={token.name}>
-        <span className="lib-ico">{kindIcon}</span> {token.name}
-      </span>
+    <div className={`lib-item ${offMap ? 'off-map' : ''}`}>
+      {offMap && isGm ? (
+        <button className="lib-item-name" onClick={onPlace} title="Fora da tela — clique para colocar de volta no mapa">
+          <span className="lib-ico">{kindIcon}</span> {token.name}
+        </button>
+      ) : (
+        <span className="lib-item-name" title={offMap ? `${token.name} (fora da tela)` : token.name}>
+          <span className="lib-ico">{kindIcon}</span> {token.name}
+        </span>
+      )}
       {isGm && (
-        <button className="lib-mini danger" title="Remover token" onClick={onDelete}>🗑</button>
+        <button className="lib-mini danger" title={`Excluir ${what} de vez`} onClick={onDelete}>🗑</button>
       )}
     </div>
   );
 }
 
-function OverlayRow({ overlay, isGm, onDelete }: { overlay: MapOverlayDTO; isGm: boolean; onDelete: () => void }) {
+function OverlayRow({
+  overlay,
+  isGm,
+  onPlace,
+  onDelete,
+}: {
+  overlay: MapOverlayDTO;
+  isGm: boolean;
+  onPlace: () => void;
+  onDelete: () => void;
+}) {
+  // fora da tela (botão Remover do mapa): aparece apagado; o GM clica para colocar de volta
+  const offMap = overlay.isOnMap === false;
   return (
-    <div className="lib-item">
-      <span className="lib-item-name" title={overlay.name}>
-        <span className="lib-ico">🗺️</span> {overlay.name}
-      </span>
+    <div className={`lib-item ${offMap ? 'off-map' : ''}`}>
+      {offMap && isGm ? (
+        <button className="lib-item-name" onClick={onPlace} title="Fora da tela — clique para colocar de volta no mapa">
+          <span className="lib-ico">🗺️</span> {overlay.name}
+        </button>
+      ) : (
+        <span className="lib-item-name" title={offMap ? `${overlay.name} (fora da tela)` : overlay.name}>
+          <span className="lib-ico">🗺️</span> {overlay.name}
+        </span>
+      )}
       {isGm && (
-        <button className="lib-mini danger" title="Remover mapa" onClick={onDelete}>🗑</button>
+        <button className="lib-mini danger" title="Excluir mapa de vez" onClick={onDelete}>🗑</button>
       )}
     </div>
   );

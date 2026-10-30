@@ -19,9 +19,13 @@ import {
   LoginDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  FirebaseLoginDto,
 } from './dto.js';
 
 const REFRESH_COOKIE = 'tt_refresh';
+
+// Temas da Ficha Ordem Paranormal que o Tabletop sabe mostrar (apps/web/src/theme.css)
+const THEMES = ['classico', 'sangue', 'morte', 'conhecimento', 'energia'];
 
 @Controller('auth')
 export class AuthController {
@@ -64,6 +68,29 @@ export class AuthController {
     const { accessToken, refresh, user } = await this.auth.login(dto.email, dto.password);
     this.setRefreshCookie(res, refresh.raw, refresh.expiresAt);
     return { accessToken, user };
+  }
+
+  /**
+   * Login pela Ficha: a página tabletop.html da Ficha envia um formulário com o
+   * ID token do Firebase. Abre a sessão (cookie) e redireciona para o app; em
+   * erro, volta para /login com a mensagem. Endereços relativos: funciona atrás
+   * do proxy do Vite e do túnel (mesma origem do app).
+   */
+  @Post('firebase')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  async firebase(@Body() dto: FirebaseLoginDto, @Res() res: Response) {
+    try {
+      const { refresh } = await this.auth.loginWithFirebase(dto.idToken, dto.name);
+      this.setRefreshCookie(res, refresh.raw, refresh.expiresAt);
+      const theme = dto.theme && THEMES.includes(dto.theme) ? `?tema=${dto.theme}` : '';
+      res.redirect(303, `/${theme}`);
+    } catch (e: any) {
+      const message = e?.status && e.status < 500 ? e.message : 'Não foi possível entrar pela Ficha.';
+      if (!e?.status || e.status >= 500) console.error('[tabletop] login pela Ficha falhou:', e);
+      // Não deixa aberta a sessão de quem usou este navegador antes
+      this.clearRefreshCookie(res);
+      res.redirect(303, `/login?erro=${encodeURIComponent(message)}`);
+    }
   }
 
   @Post('refresh')

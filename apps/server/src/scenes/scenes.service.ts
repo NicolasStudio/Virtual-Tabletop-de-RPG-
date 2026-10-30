@@ -29,6 +29,7 @@ function toOverlayDTO(o: any): MapOverlayDTO {
     order: o.order,
     isLocked: o.isLocked,
     isHidden: o.isHidden ?? false,
+    isOnMap: o.isOnMap ?? true,
   };
 }
 
@@ -68,6 +69,7 @@ function toTokenDTO(t: any): TokenDTO {
     layer: t.layer,
     isLocked: t.isLocked,
     isHidden: t.isHidden,
+    isOnMap: t.isOnMap ?? true,
     groupId: t.groupId,
     stats: t.stats ?? {},
   };
@@ -113,13 +115,15 @@ export class ScenesService {
   async getWithTokens(campaignId: string, sceneId: string, role: CampaignRole) {
     const scene = await this.assertSceneInCampaign(campaignId, sceneId);
     const tokens = await this.prisma.token.findMany({ where: { sceneId } });
-    const visible = role === 'GM' ? tokens : tokens.filter((t) => !t.isHidden);
+    // jogador não recebe tokens ocultos nem os tirados da tela (Remover)
+    const visible = role === 'GM' ? tokens : tokens.filter((t) => !t.isHidden && t.isOnMap !== false);
     const bgUrl = await this.backgroundUrlFor(scene.backgroundAssetId);
     const overlays = await this.prisma.mapOverlay.findMany({
       where: { sceneId },
       orderBy: { order: 'asc' },
     });
-    const visibleOverlays = role === 'GM' ? overlays : overlays.filter((o) => !o.isHidden);
+    // jogador não recebe mapas invisíveis nem os tirados da tela (Remover)
+    const visibleOverlays = role === 'GM' ? overlays : overlays.filter((o) => !o.isHidden && o.isOnMap !== false);
     const fogRow = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
     return {
       scene: toSceneDTO(scene, bgUrl),
@@ -336,6 +340,7 @@ export class ScenesService {
       // campos reservados ao GM nunca são aplicados por um jogador
       delete data.isHidden;
       delete data.isLocked;
+      delete data.isOnMap;
       delete data.ownerUserId;
       delete data.folderId;
       delete data.kind;
