@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { SOCKET_EVENTS, type DiceRollDTO } from '@tabletop/shared';
 import { getSocket } from '../lib/socket.js';
+import { whenLanded } from '../lib/dice3d.js';
 
 export interface RollRequest {
   formula: string;
@@ -19,8 +20,9 @@ export function useDiceRolls(campaignId: string) {
 
   useEffect(() => {
     const socket = getSocket();
-    function onRoll(payload: { roll: DiceRollDTO }) {
+    async function onRoll(payload: { roll: DiceRollDTO }) {
       if (payload.roll.campaignId !== campaignId) return;
+      await whenLanded(payload.roll.id); // só mostra depois que o dado 3D parar
       setRolls((prev) => [payload.roll, ...prev].slice(0, 100)); // mantém as 100 últimas
     }
     socket.on(SOCKET_EVENTS.DICE_ROLL, onRoll);
