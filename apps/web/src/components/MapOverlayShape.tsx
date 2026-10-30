@@ -3,6 +3,7 @@ import { Group, Rect, Image as KonvaImage, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import type { MapOverlayDTO } from '@tabletop/shared';
 import { assetUrl } from '../lib/assets.js';
+import { selectionGlow, transformerStyle } from './selectionStyle.js';
 
 function useHtmlImage(url?: string | null): HTMLImageElement | null {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
@@ -87,7 +88,12 @@ export function MapOverlayShape({ overlay, selected, editable, onSelect, onChang
         }}
       >
         {image ? (
-          <KonvaImage image={image} width={overlay.width} height={overlay.height} />
+          <KonvaImage
+            image={image}
+            width={overlay.width}
+            height={overlay.height}
+            {...(selected && editable ? selectionGlow : {})}
+          />
         ) : (
           <Rect
             width={overlay.width}
@@ -95,17 +101,15 @@ export function MapOverlayShape({ overlay, selected, editable, onSelect, onChang
             fill="rgba(80,110,160,0.18)"
             stroke="#6a8cc0"
             dash={[8, 6]}
+            {...(selected && editable ? selectionGlow : {})}
           />
-        )}
-        {selected && editable && (
-          <Rect width={overlay.width} height={overlay.height} stroke="#6db1e4" strokeWidth={2} listening={false} />
         )}
       </Group>
       {selected && editable && (
         <Transformer
           ref={trRef}
           rotateEnabled
-          keepRatio={false}
+          {...transformerStyle}
           boundBoxFunc={(oldBox, newBox) => (newBox.width < 20 || newBox.height < 20 ? oldBox : newBox)}
         />
       )}
