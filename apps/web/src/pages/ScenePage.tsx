@@ -27,7 +27,7 @@ export function ScenePage() {
   const [role, setRole] = useState<string>('PLAYER');
   const [diceOpen, setDiceOpen] = useState(false);
   const [combatOpen, setCombatOpen] = useState(false);
-  const [libOpen, setLibOpen] = useState(true);
+  const [libOpen, setLibOpen] = useState(false); // começa fechada; abre pelo botão 📚 Biblioteca
   const [snap, setSnap] = useState(true);
   const [fogMode, setFogMode] = useState<'reveal' | 'hide' | null>(null);
   const [fogBrush, setFogBrush] = useState(true); // true = pincel livre; false = por célula
@@ -452,27 +452,7 @@ export function ScenePage() {
         </div>
       )}
 
-      <div className={`scene-workspace ${libOpen ? 'lib-open' : 'lib-collapsed'}`}>
-        {libOpen && isGm && (
-          <LibraryPanel
-            campaignId={campaignId}
-            isGm={isGm}
-            scenes={scenes}
-            tokens={current?.tokens ?? []}
-            overlays={current?.overlays ?? []}
-            currentSceneId={current?.scene.id}
-            onOpenScene={loadScene}
-            onCreateScene={createScene}
-            onDeleteScene={deleteScene}
-            onCreateToken={addToken}
-            onDeleteToken={deleteToken}
-            onDeleteOverlay={deleteOverlay}
-            onPlaceOverlay={(overlayId) => onOverlayChange(overlayId, { isOnMap: true })}
-            onPlaceToken={(tokenId) => onTokenChange(tokenId, { isOnMap: true })}
-            onImport={importImage}
-          />
-        )}
-
+      <div className="scene-workspace">
         <div className="scene-map">
           {current ? (
             <MapEditor
@@ -494,12 +474,43 @@ export function ScenePage() {
           ) : (
             <div className="card">
               <p className="muted" style={{ margin: 0 }}>
-                {isGm ? 'Nenhuma cena aberta. Use a biblioteca à esquerda para criar ou abrir uma cena.' : 'O mestre ainda não criou uma cena.'}
+                {isGm ? 'Nenhuma cena aberta. Use o botão 📚 Biblioteca para criar ou abrir uma cena.' : 'O mestre ainda não criou uma cena.'}
               </p>
             </div>
           )}
         </div>
       </div>
+
+      {libOpen && isGm && (
+        <>
+          <div className="drawer-backdrop" onClick={() => setLibOpen(false)} />
+          <aside className="dice-drawer lib-drawer card" role="dialog" aria-label="Biblioteca">
+            <div className="drawer-head">
+              <h3>📚 Biblioteca</h3>
+              <button className="drawer-close" onClick={() => setLibOpen(false)} aria-label="Fechar" title="Fechar">
+                ✕
+              </button>
+            </div>
+            <LibraryPanel
+              campaignId={campaignId}
+              isGm={isGm}
+              scenes={scenes}
+              tokens={current?.tokens ?? []}
+              overlays={current?.overlays ?? []}
+              currentSceneId={current?.scene.id}
+              onOpenScene={loadScene}
+              onCreateScene={createScene}
+              onDeleteScene={deleteScene}
+              onCreateToken={addToken}
+              onDeleteToken={deleteToken}
+              onDeleteOverlay={deleteOverlay}
+              onPlaceOverlay={(overlayId) => onOverlayChange(overlayId, { isOnMap: true })}
+              onPlaceToken={(tokenId) => onTokenChange(tokenId, { isOnMap: true })}
+              onImport={importImage}
+            />
+          </aside>
+        </>
+      )}
 
       {diceOpen && (
         <>
@@ -526,7 +537,13 @@ export function ScenePage() {
                 ✕
               </button>
             </div>
-            <CombatTracker campaignId={campaignId} isGm={isGm} tokens={current?.tokens ?? []} />
+            {/* itens também são tokens (kind ITEM), mas não entram em combate */}
+            <CombatTracker
+              campaignId={campaignId}
+              isGm={isGm}
+              tokens={(current?.tokens ?? []).filter((t) => t.kind !== 'ITEM')}
+            />
+
           </aside>
         </>
       )}

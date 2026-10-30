@@ -466,6 +466,25 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 @media (max-width: 860px) {
   .library { width: calc(100% - 16px); }
 }
+/* biblioteca como drawer à esquerda (mesmo visual de Dados / Combate) */
+.lib-drawer {
+  left: 0;
+  right: auto;
+  border-left: none;
+  border-right: 1px solid var(--border);
+  box-shadow: 8px 0 28px rgba(0, 0, 0, 0.5);
+}
+.lib-drawer .library {
+  position: static;
+  width: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
 .lib-section { margin-bottom: 10px; }
 .lib-section-head {
   display: flex;
