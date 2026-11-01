@@ -489,6 +489,43 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 @media (max-width: 860px) {
   .library { width: calc(100% - 16px); }
 }
+/* aviso flutuante da mesa (ex.: "Abra uma cena antes..."): some sozinho */
+.scene-toast {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 10px 10px 14px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--danger);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  animation: scene-toast-in 0.2s ease-out;
+}
+.scene-toast-icon { color: var(--danger); font-size: 18px; line-height: 1; }
+.scene-toast .drawer-close { flex-shrink: 0; margin-left: auto; }
+@keyframes scene-toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* a mesa não carregou */
+.scene-error {
+  max-width: 460px;
+  margin: 48px auto;
+  text-align: center;
+}
+.scene-error h2 { margin: 0 0 8px; }
+.scene-error p { margin: 0 0 18px; }
+
 /* dados 3D: camada transparente por cima de tudo, sem pegar cliques */
 .dice-3d {
   position: fixed;

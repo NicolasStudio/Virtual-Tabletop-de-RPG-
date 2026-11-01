@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- d20 visto de frente: hexágono de contorno, triângulo central com o 20 -->
+  <g stroke="#2b1d06" stroke-width="4" stroke-linejoin="round">
+    <polygon points="50,3 91,26 91,74 50,97 9,74 9,26" fill="#c9962e" />
+    <polygon points="50,3 91,26 50,27 9,26" fill="#e0b24a" />
+    <polygon points="9,26 50,27 23,71 9,74" fill="#a87a22" />
+    <polygon points="91,26 50,27 77,71 91,74" fill="#b8862a" />
+    <polygon points="9,74 23,71 77,71 91,74 50,97" fill="#8f6519" />
+    <polygon points="50,27 77,71 23,71" fill="#f3cf6a" />
+  </g>
+  <text x="50" y="62" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+        font-size="23" font-weight="700" fill="#2b1d06">20</text>
+</svg>
