@@ -100,6 +100,27 @@
   --overlay: rgba(0, 0, 0, 0.7);
 }
 
+/* Medo: o oposto de Morte — página e painéis brancos, texto e destaques pretos */
+:root[data-tema='medo'],
+[data-tema='medo'] {
+  --bg: #ffffff;
+  --bg-elev: #f0f0f0;
+  --panel: #ffffff;
+  --border: #c4c4c4;
+  --text: #000000;
+  --text-dim: #5c5c5c;
+  --accent: #000000;
+  --accent-strong: #000000;
+  --accent-text: #ffffff;
+  --danger: #b3232a;
+  --ok: #1a7a43;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  --page-bg: linear-gradient(135deg, #ffffff, #f4f4f4 60%, #e6e6e6);
+  --map-bg: #1a1a1a; /* o mapa continua escuro: grade e tokens foram feitos para fundo escuro */
+  --overlay: rgba(0, 0, 0, 0.45);
+  color-scheme: light;
+}
+
 /* Conhecimento é o tema claro: pergaminho, painéis brancos com bordas douradas
    e texto escuro (na Ficha as caixas são douradas; aqui, com cards e gavetas
    grandes, o dourado fica só nos detalhes) */
