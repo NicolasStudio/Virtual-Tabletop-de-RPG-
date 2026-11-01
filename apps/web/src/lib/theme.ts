@@ -6,6 +6,7 @@ export const THEMES = [
   { id: 'classico', name: 'Clássico', description: 'Azul e ciano: o visual original.' },
   { id: 'sangue', name: 'Sangue', description: 'Vermelho-sangue, preto e branco.' },
   { id: 'morte', name: 'Morte', description: 'Preto e branco.' },
+  { id: 'medo', name: 'Medo', description: 'Claro: branco e preto.' },
   { id: 'conhecimento', name: 'Conhecimento', description: 'Claro: branco e dourado.' },
   { id: 'energia', name: 'Energia', description: 'Escuro, puxado para o roxo.' },
 ] as const;

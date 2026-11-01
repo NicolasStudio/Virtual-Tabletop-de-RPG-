@@ -25,7 +25,7 @@ import {
 const REFRESH_COOKIE = 'tt_refresh';
 
 // Temas da Ficha Ordem Paranormal que o Tabletop sabe mostrar (apps/web/src/theme.css)
-const THEMES = ['classico', 'sangue', 'morte', 'conhecimento', 'energia'];
+const THEMES = ['classico', 'sangue', 'morte', 'medo', 'conhecimento', 'energia'];
 
 @Controller('auth')
 export class AuthController {
