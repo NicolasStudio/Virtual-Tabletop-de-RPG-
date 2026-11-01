@@ -21,9 +21,9 @@ function TopBar() {
   return (
     <header className="topbar">
       <Link to="/" className="brand" style={{ textDecoration: 'none' }}>
-        ⚔ TABLETOP VTT
+        ⚔ MEU TABLETOP
       </Link>
-      <span className="muted">Virtual Tabletop de RPG</span>
+      <span className="muted">Mesa de RPG online</span>
       <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
         {status === 'authed' ? (
           <>

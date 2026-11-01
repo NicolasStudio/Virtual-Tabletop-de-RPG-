@@ -20,6 +20,8 @@ function upsertById<T extends { id: string }>(list: T[], item: T): T[] {
     : [...list, item];
 }
 
+const NOTICE_MS = 5000; // tempo do aviso flutuante na tela
+
 export function ScenePage() {
   const { campaignId = '' } = useParams();
   const { user } = useAuth();
@@ -34,7 +36,8 @@ export function ScenePage() {
   const [fogBrush, setFogBrush] = useState(true); // true = pincel livre; false = por célula
   const [brushSize, setBrushSize] = useState(60);
   const [fogMenu, setFogMenu] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // a mesa não carregou
+  const [notice, setNotice] = useState<string | null>(null); // aviso que não tira da mesa
 
   const isGm = role === 'GM';
 
@@ -80,7 +83,7 @@ export function ScenePage() {
     campaignId,
     applyAuthoritativeToken,
     resync,
-    (msg) => setError(msg),
+    (msg) => setNotice(msg), // erros do socket (ex.: sem permissão) não derrubam a mesa
     {
       // o jogador NÃO escolhe cena: segue a que o mestre ativar
       onSceneActivate: (sceneId) => {
@@ -171,9 +174,16 @@ export function ScenePage() {
   // o botão ⬆ da biblioteca pede para importar: guardamos o destino e abrimos
   // o seletor de arquivo nativo. O upload real acontece em onFilePicked.
   function importImage(kind: FolderKind, folderId: string | null) {
+    // mapa, token e item entram na cena aberta: avisa antes de escolher o arquivo
+    if (kind !== 'SCENE' && !current) {
+      setNotice(`Abra uma cena antes de importar ${IMPORT_WHAT[kind] ?? 'imagens'}.`);
+      return;
+    }
     pendingImport.current = { kind, folderId };
     fileInputRef.current?.click();
   }
+
+  const IMPORT_WHAT: Partial<Record<FolderKind, string>> = { MAP: 'mapas', TOKEN: 'tokens', ITEM: 'itens' };
 
   const FOLDER_TO_TOKEN_KIND: Record<string, TokenKind> = {
     TOKEN: 'CHARACTER',
@@ -207,7 +217,7 @@ export function ScenePage() {
       } else if (dest.kind === 'MAP') {
         // MAPA: adiciona um overlay sobre a cena atual (o GM estica/posiciona)
         if (!current) {
-          setError('Abra uma cena antes de carregar um mapa.');
+          setNotice('Abra uma cena antes de importar mapas.');
           return;
         }
         const overlay = await scenesApi.createOverlay(campaignId, current.scene.id, {
@@ -220,7 +230,7 @@ export function ScenePage() {
       } else {
         // TOKEN / ITEM: cria um token com a imagem e nome derivado do arquivo
         if (!current) {
-          setError('Abra uma cena antes de importar tokens.');
+          setNotice(`Abra uma cena antes de importar ${IMPORT_WHAT[dest.kind] ?? 'tokens'}.`);
           return;
         }
         const token = await scenesApi.createToken(campaignId, current.scene.id, {
@@ -237,7 +247,7 @@ export function ScenePage() {
         setCurrent((c) => (c ? { ...c, tokens: upsertById(c.tokens, token) } : c));
       }
     } catch (err: any) {
-      setError(err?.message ?? 'Falha no upload da imagem.');
+      setNotice(err?.message ?? 'Falha no upload da imagem.');
     } finally {
       setUploading(false);
     }
@@ -269,7 +279,7 @@ export function ScenePage() {
       c ? { ...c, overlays: c.overlays.map((o) => (o.id === overlayId ? { ...o, ...data } : o)) } : c,
     );
     void scenesApi.updateOverlay(campaignId, current.scene.id, overlayId, data).catch((e: any) =>
-      setError(e?.message ?? 'Falha ao atualizar o mapa.'),
+      setNotice(e?.message ?? 'Falha ao atualizar o mapa.'),
     );
   }
 
@@ -290,7 +300,7 @@ export function ScenePage() {
       return { ...c, fog: { ...c.fog, enabled: true, revealedCells: [...set] } };
     });
     void scenesApi.paintFog(campaignId, current.scene.id, cells, mode).catch((e: any) =>
-      setError(e?.message ?? 'Falha ao pintar a névoa.'),
+      setNotice(e?.message ?? 'Falha ao pintar a névoa.'),
     );
   }
 
@@ -304,7 +314,7 @@ export function ScenePage() {
       return { ...c, fog };
     });
     void scenesApi.brushFog(campaignId, current.scene.id, dots, mode).catch((e: any) =>
-      setError(e?.message ?? 'Falha ao pintar a névoa.'),
+      setNotice(e?.message ?? 'Falha ao pintar a névoa.'),
     );
   }
 
@@ -324,11 +334,24 @@ export function ScenePage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [fogMode]);
 
+  // aviso flutuante some sozinho; uma mensagem nova reinicia a contagem
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
+  // só quando a mesa nem carregou; o resto vira aviso flutuante (notice)
   if (error) {
     return (
       <main className="container">
-        <p className="badge err" role="alert">{error}</p>
-        <Link to={`/campaigns/${campaignId}`}>Voltar à campanha</Link>
+        <div className="card scene-error" role="alert">
+          <h2>Não foi possível abrir a mesa</h2>
+          <p className="muted">{error}</p>
+          <Link className="stb-back" to={`/campaigns/${campaignId}`}>
+            <span aria-hidden>←</span> Voltar à campanha
+          </Link>
+        </div>
       </main>
     );
   }
@@ -547,6 +570,16 @@ export function ScenePage() {
 
           </aside>
         </>
+      )}
+
+      {notice && (
+        <div className="scene-toast" role="alert">
+          <span className="scene-toast-icon" aria-hidden="true">⚠</span>
+          <span>{notice}</span>
+          <button className="drawer-close" onClick={() => setNotice(null)} aria-label="Fechar aviso" title="Fechar">
+            ✕
+          </button>
+        </div>
       )}
 
       <Dice3D campaignId={campaignId} />
