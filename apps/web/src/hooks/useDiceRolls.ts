@@ -8,6 +8,7 @@ export interface RollRequest {
   // rolagens vindas da Ficha: o que foi rolado, o personagem e a conta com os atributos
   label?: string; // ex.: "Machadão — Dano"
   character?: string; // ex.: "Gailivera"
+  characterKind?: 'character' | 'creature'; // ficha de jogador (🎮) ou de criatura (😈)
   expression?: string; // ex.: "1d8 + FOR"
   visibility?: 'PUBLIC' | 'GM' | 'PRIVATE';
   advantage?: boolean;

@@ -386,24 +386,6 @@ button.btn.ghost:hover { border-color: var(--accent); background: var(--bg-elev)
   flex-direction: column;
   gap: 4px;
 }
-.roll-line {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.roll-total {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--accent-strong);
-  min-width: 34px;
-  text-align: center;
-}
-.roll-meta { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.3; }
 /* valor de cada dado: "d20 17"; máximo em destaque, 1 em vermelho */
 .roll-dice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .roll-die {
@@ -423,7 +405,7 @@ button.btn.ghost:hover { border-color: var(--accent); background: var(--bg-elev)
 .roll-die.min { border-color: var(--danger); color: var(--danger); }
 .roll-die.dropped { opacity: 0.45; text-decoration: line-through; }
 .roll-mod { font-size: 13px; font-weight: 700; color: var(--text-dim); }
-/* rolagem de arma pela Ficha: cartão com personagem, arma, conta e total */
+/* cartão de cada rolagem no histórico: quem rolou, o que foi rolado, conta, dados e total */
 .roll-card {
   flex-shrink: 0; /* no histórico em coluna, o cartão não é espremido: a lista rola */
   display: flex;
@@ -438,6 +420,9 @@ button.btn.ghost:hover { border-color: var(--accent); background: var(--bg-elev)
   line-height: 1.25;
 }
 .roll-card-who { font-size: 14px; color: var(--accent-strong); }
+/* criatura (😈): faixa e nome na cor de perigo, para não confundir com os personagens */
+.roll-card.creature { border-left-color: var(--danger); }
+.roll-card.creature .roll-card-who { color: var(--danger); }
 .roll-card-what { margin-top: -3px; }
 .roll-card-box {
   padding: 2px 8px;
@@ -626,6 +611,22 @@ a.drawer-close { text-decoration: none; }
 .ficha-drawer.resizing { user-select: none; }
 .ficha-drawer.resizing .ficha-frame { pointer-events: none; }
 .ficha-drawer.hidden { display: none; } /* esconde sem descarregar a ficha */
+/* abas Ficha | Bestiário | Enviar itens (as duas últimas só para o mestre) */
+.ficha-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ficha-tab {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.ficha-tab:hover { background: var(--bg-elev); color: var(--text); }
+.ficha-tab.active { border-color: var(--accent-strong); color: var(--accent-strong); background: var(--bg-elev); }
 .ficha-frame {
   flex: 1;
   width: 100%;
@@ -633,6 +634,59 @@ a.drawer-close { text-decoration: none; }
   border-radius: 8px;
 }
 .dice-drawer.beside-ficha { right: var(--ficha-width, min(1240px, 100vw)); }
+
+/* Jogadores na mesa (PlayersBox): canto inferior esquerdo, abaixo das gavetas */
+.players-box {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 30;
+  min-width: 200px;
+  max-width: 260px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  overflow: hidden;
+}
+.players-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.players-box.collapsed .players-head { border-bottom: none; }
+.players-count {
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+}
+.players-caret { margin-left: auto; color: var(--text-dim); }
+.players-list { list-style: none; margin: 0; padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 4px; }
+.players-list li { display: flex; align-items: center; gap: 6px; color: var(--text); }
+.players-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 4px var(--ok);
+}
+.players-list li.gm .players-dot { background: var(--accent-strong); box-shadow: 0 0 4px var(--accent-strong); }
+.players-role { color: var(--accent-strong); font-size: 12px; }
+.players-me { color: var(--text-dim); font-size: 12px; }
 
 /* dados 3D: camada transparente por cima de tudo, sem pegar cliques */
 .dice-3d {
@@ -866,6 +920,40 @@ input[type='number'] {
   margin-left: auto;
   flex-wrap: wrap;
 }
+/* botões só com ícone; o nome aparece embaixo ao passar o mouse (data-tip) */
+.stb-icon {
+  position: relative;
+  width: 42px;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  justify-content: center;
+  font-size: 17px;
+}
+.stb-icon[aria-expanded='true'] { border-color: var(--accent-strong); }
+.stb-icon::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 35;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.stb-icon:hover::after,
+.stb-icon:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+/* com o menu da névoa aberto, a dica não fica por cima dele */
+.fog-wrap .stb-icon[aria-expanded='true']::after { opacity: 0; }
 .stb-snap {
   display: inline-flex;
   align-items: center;

@@ -140,6 +140,8 @@ export interface DiceRollDTO {
   label?: string;
   /** personagem da Ficha que rolou, ex.: "Gailivera" */
   character?: string;
+  /** de que ficha veio: de jogador (🎮) ou de criatura (😈) */
+  characterKind?: 'character' | 'creature';
   /** a conta como o jogador lê, com os atributos por nome, ex.: "1d8 + FOR" */
   expression?: string;
   result: number;

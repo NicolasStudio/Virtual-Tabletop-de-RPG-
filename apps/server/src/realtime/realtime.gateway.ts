@@ -144,6 +144,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       // rolagem pela Ficha: o que foi rolado, o personagem e a conta com os atributos por nome
       label?: string; // ex.: "Machadão — Dano"
       character?: string; // ex.: "Gailivera"
+      characterKind?: 'character' | 'creature'; // ficha de jogador ou de criatura
       expression?: string; // ex.: "1d8 + FOR"
       visibility?: 'PUBLIC' | 'GM' | 'PRIVATE';
       advantage?: boolean;
@@ -168,6 +169,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     const label = text(body.label, 80);
     const character = label ? text(body.character, 80) : undefined;
     const expression = label ? text(body.expression, 100) : undefined;
+    const characterKind = character
+      ? body.characterKind === 'creature' ? 'creature' : 'character'
+      : undefined;
     const user = await this.prisma.user.findUnique({ where: { id: data.userId }, select: { displayName: true } });
     const saved = await this.prisma.diceRoll.create({
       data: {
@@ -176,7 +180,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         formula: body.formula,
         result: breakdown.total,
         // rótulo, personagem e conta ficam junto do detalhe (JSON), sem coluna nova no banco
-        breakdown: (label ? { ...breakdown, label, character, expression } : breakdown) as object,
+        breakdown: (label ? { ...breakdown, label, character, characterKind, expression } : breakdown) as object,
         visibility,
       },
     });
@@ -189,6 +193,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       formula: body.formula,
       label,
       character,
+      characterKind,
       expression,
       result: breakdown.total,
       breakdown,

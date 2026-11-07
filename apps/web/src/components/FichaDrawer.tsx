@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { authApi } from '../lib/api.js';
-import { FICHA_HOME_URL, FICHA_MSG, FICHA_ORIGIN } from '../lib/ficha.js';
+import { FICHA_MSG, FICHA_ORIGIN, FICHA_TABS, type FichaTabId } from '../lib/ficha.js';
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  isGm: boolean; // o mestre também tem as abas Bestiário e Enviar itens
+  /** aba aberta: vem da cena, porque os botões da barra também escolhem a aba */
+  tab: FichaTabId;
+  onTabChange: (tab: FichaTabId) => void;
   /** rolagem pedida pela Ficha (botões das armas); a mesa rola no servidor */
-  onRoll: (roll: { formula: string; label: string; character?: string; expression?: string }) => void;
+  onRoll: (roll: {
+    formula: string;
+    label: string;
+    character?: string;
+    characterKind?: 'character' | 'creature';
+    expression?: string;
+  }) => void;
 }
 
 // Largura da gaveta: arrastando a borda esquerda. Fica salva neste navegador e vai
@@ -33,15 +43,37 @@ function savedWidth() {
  * ao reabrir está no mesmo ponto e nada que estava sendo editado se perde.
  * A Ficha entra sozinha na conta do jogador: pede o login à mesa (ver FICHA_MSG).
  */
-export function FichaDrawer({ open, onClose, onRoll }: Props) {
-  const [loaded, setLoaded] = useState(open);
+const urlOf = (id: FichaTabId) => FICHA_TABS.find((t) => t.id === id)!.url;
+
+export function FichaDrawer({ open, onClose, isGm, tab, onTabChange, onRoll }: Props) {
+  // endereço inicial, definido na primeira vez que a gaveta abre (já na aba escolhida)
+  const [firstSrc, setFirstSrc] = useState<string | null>(null);
   const [width, setWidth] = useState(savedWidth);
   const [resizing, setResizing] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const shownUrl = useRef<string | null>(null); // tela que o iframe recebeu por último
+  const tabs = FICHA_TABS.filter((t) => isGm || !t.gmOnly);
 
+  // a cena trocou a aba (botões da barra): leva o iframe para a tela dela
   useEffect(() => {
-    if (open) setLoaded(true);
-  }, [open]);
+    if (!open) return;
+    const url = urlOf(tab);
+    if (firstSrc === null) {
+      setFirstSrc(url);
+    } else if (shownUrl.current !== url && frameRef.current) {
+      frameRef.current.src = url;
+    }
+    shownUrl.current = url;
+  }, [open, tab, firstSrc]);
+
+  // Clique numa aba da gaveta: sempre leva ao início da tela (mesmo na aba já ativa,
+  // ex.: voltar da ficha aberta para a lista de fichas)
+  function openTab(id: FichaTabId) {
+    const url = urlOf(id);
+    if (frameRef.current) frameRef.current.src = url;
+    shownUrl.current = url;
+    onTabChange(id);
+  }
 
   useEffect(() => {
     document.documentElement.style.setProperty('--ficha-width', `${clampWidth(width)}px`);
@@ -74,7 +106,7 @@ export function FichaDrawer({ open, onClose, onRoll }: Props) {
       const frame = frameRef.current?.contentWindow;
       if (!frame || e.source !== frame || e.origin !== FICHA_ORIGIN) return;
       if (e.data?.type === FICHA_MSG.roll) {
-        const { formula, label, character, expression } = e.data;
+        const { formula, label, character, characterKind, expression } = e.data;
         const text = (value: unknown, max: number) => (typeof value === 'string' ? value.slice(0, max) : undefined);
         // o servidor valida a fórmula e corta os textos; aqui só barra o que nem é texto
         if (typeof formula === 'string' && formula.length <= 100) {
@@ -82,6 +114,7 @@ export function FichaDrawer({ open, onClose, onRoll }: Props) {
             formula,
             label: text(label, 80) ?? '',
             character: text(character, 80),
+            characterKind: characterKind === 'creature' ? 'creature' : 'character',
             expression: text(expression, 100),
           });
         }
@@ -100,7 +133,7 @@ export function FichaDrawer({ open, onClose, onRoll }: Props) {
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
-  if (!loaded) return null;
+  if (firstSrc === null) return null; // ainda não foi aberta
   return (
     <aside
       className={`dice-drawer ficha-drawer card ${open ? '' : 'hidden'} ${resizing ? 'resizing' : ''}`}
@@ -120,14 +153,25 @@ export function FichaDrawer({ open, onClose, onRoll }: Props) {
         onDoubleClick={() => setWidth(clampWidth(DEFAULT_WIDTH))}
       />
       <div className="drawer-head">
-        <h3>📜 Ficha</h3>
+        <nav className="ficha-tabs" aria-label="Telas da Ficha">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              className={`ficha-tab ${t.id === tab ? 'active' : ''}`}
+              aria-current={t.id === tab ? 'page' : undefined}
+              onClick={() => openTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
         <div className="drawer-actions">
           <a
             className="drawer-close"
-            href={FICHA_HOME_URL}
+            href={urlOf(tab)}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Abrir a ficha em uma aba nova"
+            aria-label="Abrir esta tela em uma aba nova"
             title="Abrir em aba nova"
           >
             ↗
@@ -137,7 +181,8 @@ export function FichaDrawer({ open, onClose, onRoll }: Props) {
           </button>
         </div>
       </div>
-      <iframe ref={frameRef} className="ficha-frame" src={FICHA_HOME_URL} title="Ficha do personagem" />
+      {/* src fixo: depois de aberta, as abas trocam a tela direto no iframe, sem o React recarregar */}
+      <iframe ref={frameRef} className="ficha-frame" src={firstSrc} title="Ficha" />
     </aside>
   );
 }
