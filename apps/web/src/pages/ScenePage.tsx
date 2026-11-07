@@ -352,6 +352,18 @@ export function ScenePage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [fogMode]);
 
+  // tela cheia: a mesa começa logo abaixo do cabeçalho do site, que pode quebrar em
+  // duas linhas em telas estreitas; mede e guarda em --topbar-h (theme.css: .scene-page)
+  useEffect(() => {
+    const topbar = document.querySelector<HTMLElement>('.topbar');
+    if (!topbar) return;
+    const observer = new ResizeObserver(() =>
+      document.documentElement.style.setProperty('--topbar-h', `${topbar.offsetHeight}px`),
+    );
+    observer.observe(topbar);
+    return () => observer.disconnect();
+  }, []);
+
   // aviso flutuante some sozinho; uma mensagem nova reinicia a contagem
   useEffect(() => {
     if (!notice) return;
@@ -375,7 +387,8 @@ export function ScenePage() {
   }
 
   return (
-    <main className="container" style={{ maxWidth: 1280 }}>
+    // tela cheia: o mapa ocupa tudo e a barra da cena flutua por cima (theme.css: .scene-page)
+    <main className="scene-page">
       <input
         ref={fileInputRef}
         type="file"
@@ -383,7 +396,7 @@ export function ScenePage() {
         style={{ display: 'none' }}
         onChange={onFilePicked}
       />
-      {uploading && <div className="badge" style={{ marginBottom: 8 }}>Enviando imagem…</div>}
+      {uploading && <div className="badge scene-uploading">Enviando imagem…</div>}
       <header className="scene-toolbar">
         <Link to={`/campaigns/${campaignId}`} className="stb-back" title="Voltar à campanha">
           <span aria-hidden>←</span> Campanha
@@ -541,7 +554,7 @@ export function ScenePage() {
               onFogBrush={onFogBrush}
             />
           ) : (
-            <div className="card">
+            <div className="card scene-empty">
               <p className="muted" style={{ margin: 0 }}>
                 {isGm ? 'Nenhuma cena aberta. Use o botão 📚 Biblioteca para criar ou abrir uma cena.' : 'O mestre ainda não criou uma cena.'}
               </p>

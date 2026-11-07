@@ -521,7 +521,7 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 /* aviso flutuante da mesa (ex.: "Abra uma cena antes..."): some sozinho */
 .scene-toast {
   position: fixed;
-  top: 72px;
+  top: calc(var(--topbar-h, 49px) + 84px); /* abaixo da barra da cena, que flutua sobre o mapa */
   left: 50%;
   transform: translateX(-50%);
   z-index: 70;
@@ -848,6 +848,63 @@ input[type='number'] {
   color: #6db1e4 !important;
 }
 
+
+/* ---- Mesa em tela cheia (ScenePage) ----
+   O mapa ocupa toda a tela abaixo do cabeçalho do site (--topbar-h, medido na página);
+   a barra da cena, os controles do item selecionado e a linha de ajuda flutuam por cima */
+.scene-page {
+  position: fixed;
+  top: var(--topbar-h, 49px);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: var(--map-bg);
+}
+.scene-page .scene-workspace,
+.scene-page .scene-map,
+.scene-page .map-editor {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+.scene-page .map-editor { border: none; border-radius: 0; }
+.scene-page .scene-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg-elev) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
+}
+.scene-page .map-hud {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-elev) 85%, transparent);
+  pointer-events: none;
+}
+.scene-page .sel-ctl {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 5;
+  margin: 0;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow);
+}
+.scene-page .scene-empty,
+.scene-page .scene-uploading {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.scene-page .scene-empty { top: 45%; }
+.scene-page .scene-uploading { top: 84px; z-index: 25; }
 
 /* ---- Cabeçalho (toolbar) da cena ---- */
 .scene-toolbar {
