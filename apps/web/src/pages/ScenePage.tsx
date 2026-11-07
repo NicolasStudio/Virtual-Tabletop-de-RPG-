@@ -582,22 +582,14 @@ export function ScenePage() {
       )}
 
       {/* Dados à esquerda (ao lado da Biblioteca, se aberta) e Combate à direita.
-          Sem fundo escuro: abrem juntos e o mapa continua usável; cada cabeçalho
-          abre o outro painel (a gaveta pode cobrir os botões da barra) */}
+          Sem fundo escuro: abrem juntos e o mapa continua usável */}
       {diceOpen && (
         <aside className={`dice-drawer left-drawer card ${libOpen && isGm ? 'beside-lib' : ''}`} aria-label="Dados">
           <div className="drawer-head">
             <h3>🎲 Dados</h3>
-            <div className="drawer-actions">
-              {!combatOpen && (
-                <button className="drawer-close" onClick={() => setCombatOpen(true)} aria-label="Abrir combate" title="Abrir combate">
-                  ⚔
-                </button>
-              )}
-              <button className="drawer-close" onClick={() => setDiceOpen(false)} aria-label="Fechar" title="Fechar">
-                ✕
-              </button>
-            </div>
+            <button className="drawer-close" onClick={() => setDiceOpen(false)} aria-label="Fechar" title="Fechar">
+              ✕
+            </button>
           </div>
           <DicePanel dice={dice} canSeeGmVisibility={isGm} />
         </aside>
@@ -617,16 +609,9 @@ export function ScenePage() {
         <aside className={`dice-drawer card ${fichaOpen ? 'beside-ficha' : ''}`} aria-label="Combate">
           <div className="drawer-head">
             <h3>⚔ Combate</h3>
-            <div className="drawer-actions">
-              {!diceOpen && (
-                <button className="drawer-close" onClick={() => setDiceOpen(true)} aria-label="Abrir dados" title="Abrir dados">
-                  🎲
-                </button>
-              )}
-              <button className="drawer-close" onClick={() => setCombatOpen(false)} aria-label="Fechar" title="Fechar">
-                ✕
-              </button>
-            </div>
+            <button className="drawer-close" onClick={() => setCombatOpen(false)} aria-label="Fechar" title="Fechar">
+              ✕
+            </button>
           </div>
           {/* itens também são tokens (kind ITEM), mas não entram em combate */}
           <CombatTracker
