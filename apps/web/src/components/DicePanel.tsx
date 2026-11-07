@@ -48,29 +48,18 @@ function DiceChips({ roll }: { roll: DiceRollDTO }) {
   );
 }
 
-function RollLine({ roll }: { roll: DiceRollDTO }) {
-  return (
-    <li className="roll-line">
-      <span className="roll-total">{roll.result}</span>
-      <span className="roll-meta">
-        <span>
-          <strong>{roll.userDisplayName ?? 'Alguém'}</strong> · {roll.formula}
-          {visibilityIcon(roll)}
-        </span>
-        <DiceChips roll={roll} />
-      </span>
-    </li>
-  );
-}
-
-// Rolagem de arma pela Ficha: personagem, arma, a conta com os atributos e o total
+// Cartão de cada rolagem: quem rolou (😈 criatura, 🎮 personagem ou jogador), o que foi
+// rolado, a conta (com os atributos por nome, nas vindas da Ficha), os dados e o total
 function RollCard({ roll }: { roll: DiceRollDTO }) {
   const player = roll.userDisplayName ?? 'Alguém';
+  const creature = roll.characterKind === 'creature';
   return (
-    <li className="roll-card">
-      <strong className="roll-card-who">{roll.character || player}</strong>
+    <li className={`roll-card ${creature ? 'creature' : ''}`}>
+      <strong className="roll-card-who">
+        <span aria-hidden="true">{creature ? '😈' : '🎮'}</span> {roll.character || player}
+      </strong>
       <span className="roll-card-what">
-        {roll.label}
+        {roll.label ?? 'Teste'}
         {roll.character && <span className="muted"> · {player}</span>}
         {visibilityIcon(roll)}
       </span>
@@ -146,7 +135,7 @@ export function DicePanel({ dice }: Props) {
             Nenhuma rolagem ainda.
           </li>
         ) : (
-          rolls.map((r) => (r.label ? <RollCard key={r.id} roll={r} /> : <RollLine key={r.id} roll={r} />))
+          rolls.map((r) => <RollCard key={r.id} roll={r} />)
         )}
       </ul>
     </div>

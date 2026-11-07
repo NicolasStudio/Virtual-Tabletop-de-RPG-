@@ -11,6 +11,8 @@ import { CombatTracker } from '../components/CombatTracker.js';
 import { LibraryPanel } from '../components/LibraryPanel.js';
 import { Dice3D } from '../components/Dice3D.js';
 import { FichaDrawer } from '../components/FichaDrawer.js';
+import { PlayersBox } from '../components/PlayersBox.js';
+import type { FichaTabId } from '../lib/ficha.js';
 import { useRealtimeScene } from '../hooks/useRealtimeScene.js';
 import { useDiceRolls } from '../hooks/useDiceRolls.js';
 
@@ -34,6 +36,18 @@ export function ScenePage() {
   const dice = useDiceRolls(campaignId); // aqui, e não no painel: o histórico não some ao fechar
   const [combatOpen, setCombatOpen] = useState(false);
   const [fichaOpen, setFichaOpen] = useState(false);
+  const [fichaTab, setFichaTab] = useState<FichaTabId>('ficha');
+
+  // botões Ficha / Bestiário / Enviar itens: abrem a gaveta da Ficha na aba deles;
+  // clicar de novo no da aba que já está aberta fecha a gaveta
+  function toggleFicha(tab: FichaTabId) {
+    if (fichaOpen && fichaTab === tab) {
+      setFichaOpen(false);
+    } else {
+      setFichaTab(tab);
+      setFichaOpen(true);
+    }
+  }
   const [libOpen, setLibOpen] = useState(false); // começa fechada; abre pelo botão 📚 Biblioteca
   const [snap, setSnap] = useState(true);
   const [fogMode, setFogMode] = useState<'reveal' | 'hide' | null>(null);
@@ -388,29 +402,59 @@ export function ScenePage() {
             <input type="checkbox" checked={snap} onChange={(e) => setSnap(e.target.checked)} />
             <span>snap à grade</span>
           </label>
+          {/* só ícones; o nome aparece ao passar o mouse (data-tip) */}
           {isGm && (
-            <button className="btn ghost" onClick={() => setLibOpen((v) => !v)} aria-expanded={libOpen} title="Biblioteca de cenas, mapas, tokens e itens">
-              📚 Biblioteca
+            <button className="btn ghost stb-icon" onClick={() => setLibOpen((v) => !v)} aria-expanded={libOpen} aria-label="Biblioteca" data-tip="Biblioteca">
+              📚
             </button>
           )}
-          <button className="btn ghost" onClick={() => setDiceOpen((v) => !v)} aria-expanded={diceOpen}>
-            🎲 Dados
+          <button className="btn ghost stb-icon" onClick={() => setDiceOpen((v) => !v)} aria-expanded={diceOpen} aria-label="Dados" data-tip="Dados">
+            🎲
           </button>
-          <button className="btn ghost" onClick={() => setCombatOpen((v) => !v)} aria-expanded={combatOpen}>
-            ⚔ Combate
+          <button className="btn ghost stb-icon" onClick={() => setCombatOpen((v) => !v)} aria-expanded={combatOpen} aria-label="Combate" data-tip="Combate">
+            ⚔
           </button>
-          <button className="btn ghost" onClick={() => setFichaOpen((v) => !v)} aria-expanded={fichaOpen}>
-            📜 Ficha
+          <button
+            className="btn ghost stb-icon"
+            onClick={() => toggleFicha('ficha')}
+            aria-expanded={fichaOpen && fichaTab === 'ficha'}
+            aria-label="Ficha do personagem"
+            data-tip="Ficha do personagem"
+          >
+            📜
           </button>
+          {isGm && (
+            <>
+              <button
+                className="btn ghost stb-icon"
+                onClick={() => toggleFicha('bestiario')}
+                aria-expanded={fichaOpen && fichaTab === 'bestiario'}
+                aria-label="Bestiário"
+                data-tip="Bestiário"
+              >
+                🐾
+              </button>
+              <button
+                className="btn ghost stb-icon"
+                onClick={() => toggleFicha('enviar')}
+                aria-expanded={fichaOpen && fichaTab === 'enviar'}
+                aria-label="Enviar itens"
+                data-tip="Enviar itens"
+              >
+                📦
+              </button>
+            </>
+          )}
           {isGm && current && (
             <div className="fog-wrap">
               <button
-                className={`btn ghost ${fogMode ? 'fog-on' : ''}`}
+                className={`btn ghost stb-icon ${fogMode ? 'fog-on' : ''}`}
                 onClick={() => setFogMenu((v) => !v)}
                 aria-expanded={fogMenu}
-                title="Ferramentas de névoa de guerra"
+                aria-label="Névoa de guerra"
+                data-tip="Névoa de guerra"
               >
-                ☁ Névoa
+                ☁
               </button>
               {fogMenu && (
                 <div className="fog-menu card">
@@ -476,12 +520,6 @@ export function ScenePage() {
           )}
         </div>
       </header>
-
-      {online.length > 0 && (
-        <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-          Online: {online.map((o) => `${o.displayName} (${o.role})`).join(' · ')}
-        </div>
-      )}
 
       <div className="scene-workspace">
         <div className="scene-map">
@@ -568,6 +606,9 @@ export function ScenePage() {
       <FichaDrawer
         open={fichaOpen}
         onClose={() => setFichaOpen(false)}
+        isGm={isGm}
+        tab={fichaTab}
+        onTabChange={setFichaTab}
         // botões das armas na Ficha: rolagem pública, com o nome da arma no histórico
         onRoll={(roll) => dice.rollDice({ ...roll, visibility: 'PUBLIC' })}
       />
@@ -605,6 +646,8 @@ export function ScenePage() {
           </button>
         </div>
       )}
+
+      {online.length > 0 && <PlayersBox online={online} myUserId={user?.id} />}
 
       <Dice3D campaignId={campaignId} />
     </main>
