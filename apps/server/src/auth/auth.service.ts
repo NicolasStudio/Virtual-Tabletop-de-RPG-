@@ -10,6 +10,7 @@ import { randomBytes, createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { TokenService } from './token.service.js';
 import { FirebaseTokenService } from './firebase-token.service.js';
+import { FirebaseCustomTokenService } from './firebase-custom-token.service.js';
 import type { PublicUser } from '@tabletop/shared';
 
 // Contas criadas pelo login da Ficha não têm senha no Tabletop: este marcador
@@ -38,7 +39,16 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly tokens: TokenService,
     private readonly firebase: FirebaseTokenService,
+    private readonly firebaseCustomTokens: FirebaseCustomTokenService,
   ) {}
+
+  /** Token para a Ficha aberta dentro da mesa entrar sozinha na conta deste usuário. */
+  async firebaseCustomToken(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuário não encontrado.');
+    if (!user.firebaseUid) throw new NotFoundException('Esta conta não está ligada a uma conta da Ficha.');
+    return this.firebaseCustomTokens.create(user.firebaseUid);
+  }
 
   async register(email: string, displayName: string, password: string) {
     const exists = await this.prisma.user.findUnique({ where: { email } });

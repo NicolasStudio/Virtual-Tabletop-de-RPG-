@@ -402,8 +402,27 @@ button.btn.ghost:hover { border-color: var(--accent); background: var(--bg-elev)
   min-width: 34px;
   text-align: center;
 }
-.roll-meta { font-size: 12px; line-height: 1.3; }
-.roll-detail { display: block; }
+.roll-meta { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.3; }
+/* valor de cada dado: "d20 17"; máximo em destaque, 1 em vermelho */
+.roll-dice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.roll-die {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.roll-die small { font-size: 10px; font-weight: 600; color: var(--text-dim); }
+.roll-die.max { border-color: var(--accent-strong); color: var(--accent-strong); }
+.roll-die.min { border-color: var(--danger); color: var(--danger); }
+.roll-die.dropped { opacity: 0.45; text-decoration: line-through; }
+.roll-mod { font-size: 13px; font-weight: 700; color: var(--text-dim); }
+.roll-label { font-weight: 700; color: var(--accent-strong); } /* "Machadão — Dano" (rolagem pela Ficha) */
 
 /* combat tracker */
 button.btn.sm { padding: 6px 10px; font-size: 13px; }
@@ -525,6 +544,66 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
 }
 .scene-error h2 { margin: 0 0 8px; }
 .scene-error p { margin: 0 0 18px; }
+
+/* Dados: gaveta à esquerda (o Combate fica na direita); com a Biblioteca aberta,
+   fica ao lado dela */
+.left-drawer {
+  left: 0;
+  right: auto;
+  border-left: none;
+  border-right: 1px solid var(--border);
+  box-shadow: 8px 0 28px rgba(0, 0, 0, 0.5);
+}
+.left-drawer.beside-lib { left: min(380px, 92vw); }
+.drawer-actions { display: flex; gap: 6px; }
+a.drawer-close { text-decoration: none; }
+
+/* Ficha dentro da mesa (FichaDrawer): gaveta larga à direita; o Combate fica ao lado */
+.ficha-drawer {
+  /* --ficha-width: largura escolhida arrastando a borda (FichaDrawer) */
+  width: var(--ficha-width, min(1240px, 100vw));
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 12px 12px 18px;
+}
+/* alça na borda esquerda: arrastar muda a largura */
+.ficha-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 10px;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 1;
+}
+.ficha-resize::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 4px;
+  height: 48px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.15s;
+}
+.ficha-resize:hover::after,
+.ficha-drawer.resizing .ficha-resize::after { background: var(--accent-strong); }
+/* enquanto arrasta, a Ficha não "rouba" o mouse nem seleciona texto */
+.ficha-drawer.resizing { user-select: none; }
+.ficha-drawer.resizing .ficha-frame { pointer-events: none; }
+.ficha-drawer.hidden { display: none; } /* esconde sem descarregar a ficha */
+.ficha-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+}
+.dice-drawer.beside-ficha { right: var(--ficha-width, min(1240px, 100vw)); }
 
 /* dados 3D: camada transparente por cima de tudo, sem pegar cliques */
 .dice-3d {

@@ -5,7 +5,7 @@ import type Konva from 'konva';
 // deslocamento: segue a transparência do PNG) e pontos de controle redondos
 // com ícone — girar em cima, esticar nas laterais, redimensionar no canto.
 
-const GLOW_COLOR = '#e4bf63';
+export const GLOW_COLOR = '#e4bf63';
 
 /** Props da imagem selecionada (KonvaImage / Rect). */
 export const selectionGlow = {

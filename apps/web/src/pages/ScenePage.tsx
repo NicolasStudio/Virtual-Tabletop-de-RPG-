@@ -10,7 +10,9 @@ import { DicePanel } from '../components/DicePanel.js';
 import { CombatTracker } from '../components/CombatTracker.js';
 import { LibraryPanel } from '../components/LibraryPanel.js';
 import { Dice3D } from '../components/Dice3D.js';
+import { FichaDrawer } from '../components/FichaDrawer.js';
 import { useRealtimeScene } from '../hooks/useRealtimeScene.js';
+import { useDiceRolls } from '../hooks/useDiceRolls.js';
 
 // Acrescenta ou atualiza pelo id. O mesmo token/mapa chega duas vezes ao ser criado:
 // pela resposta da API e pelo aviso em tempo real (socket), em qualquer ordem.
@@ -29,7 +31,9 @@ export function ScenePage() {
   const [current, setCurrent] = useState<{ scene: SceneDTO; tokens: TokenDTO[]; overlays: MapOverlayDTO[]; fog: SceneFogDTO } | null>(null);
   const [role, setRole] = useState<string>('PLAYER');
   const [diceOpen, setDiceOpen] = useState(false);
+  const dice = useDiceRolls(campaignId); // aqui, e não no painel: o histórico não some ao fechar
   const [combatOpen, setCombatOpen] = useState(false);
+  const [fichaOpen, setFichaOpen] = useState(false);
   const [libOpen, setLibOpen] = useState(false); // começa fechada; abre pelo botão 📚 Biblioteca
   const [snap, setSnap] = useState(true);
   const [fogMode, setFogMode] = useState<'reveal' | 'hide' | null>(null);
@@ -395,6 +399,9 @@ export function ScenePage() {
           <button className="btn ghost" onClick={() => setCombatOpen((v) => !v)} aria-expanded={combatOpen}>
             ⚔ Combate
           </button>
+          <button className="btn ghost" onClick={() => setFichaOpen((v) => !v)} aria-expanded={fichaOpen}>
+            📜 Ficha
+          </button>
           {isGm && current && (
             <div className="fog-wrap">
               <button
@@ -536,40 +543,57 @@ export function ScenePage() {
         </>
       )}
 
+      {/* Dados à esquerda (ao lado da Biblioteca, se aberta) e Combate à direita.
+          Sem fundo escuro: abrem juntos e o mapa continua usável; cada cabeçalho
+          abre o outro painel (a gaveta pode cobrir os botões da barra) */}
       {diceOpen && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setDiceOpen(false)} />
-          <aside className="dice-drawer card" role="dialog" aria-label="Dados">
-            <div className="drawer-head">
-              <h3>🎲 Dados</h3>
+        <aside className={`dice-drawer left-drawer card ${libOpen && isGm ? 'beside-lib' : ''}`} aria-label="Dados">
+          <div className="drawer-head">
+            <h3>🎲 Dados</h3>
+            <div className="drawer-actions">
+              {!combatOpen && (
+                <button className="drawer-close" onClick={() => setCombatOpen(true)} aria-label="Abrir combate" title="Abrir combate">
+                  ⚔
+                </button>
+              )}
               <button className="drawer-close" onClick={() => setDiceOpen(false)} aria-label="Fechar" title="Fechar">
                 ✕
               </button>
             </div>
-            <DicePanel campaignId={campaignId} canSeeGmVisibility={isGm} />
-          </aside>
-        </>
+          </div>
+          <DicePanel dice={dice} canSeeGmVisibility={isGm} />
+        </aside>
       )}
 
+      <FichaDrawer
+        open={fichaOpen}
+        onClose={() => setFichaOpen(false)}
+        // botões das armas na Ficha: rolagem pública, com o nome da arma no histórico
+        onRoll={(formula, label) => dice.rollDice({ formula, label, visibility: 'PUBLIC' })}
+      />
+
       {combatOpen && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setCombatOpen(false)} />
-          <aside className="dice-drawer card" role="dialog" aria-label="Combate">
-            <div className="drawer-head">
-              <h3>⚔ Combate</h3>
+        <aside className={`dice-drawer card ${fichaOpen ? 'beside-ficha' : ''}`} aria-label="Combate">
+          <div className="drawer-head">
+            <h3>⚔ Combate</h3>
+            <div className="drawer-actions">
+              {!diceOpen && (
+                <button className="drawer-close" onClick={() => setDiceOpen(true)} aria-label="Abrir dados" title="Abrir dados">
+                  🎲
+                </button>
+              )}
               <button className="drawer-close" onClick={() => setCombatOpen(false)} aria-label="Fechar" title="Fechar">
                 ✕
               </button>
             </div>
-            {/* itens também são tokens (kind ITEM), mas não entram em combate */}
-            <CombatTracker
-              campaignId={campaignId}
-              isGm={isGm}
-              tokens={(current?.tokens ?? []).filter((t) => t.kind !== 'ITEM')}
-            />
-
-          </aside>
-        </>
+          </div>
+          {/* itens também são tokens (kind ITEM), mas não entram em combate */}
+          <CombatTracker
+            campaignId={campaignId}
+            isGm={isGm}
+            tokens={(current?.tokens ?? []).filter((t) => t.kind !== 'ITEM')}
+          />
+        </aside>
       )}
 
       {notice && (

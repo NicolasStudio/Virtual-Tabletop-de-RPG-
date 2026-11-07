@@ -131,4 +131,12 @@ export class AuthController {
   async me(@CurrentUser('sub') userId: string) {
     return this.auth.me(userId);
   }
+
+  /** Login da Ficha aberta dentro da mesa (FichaDrawer): custom token do Firebase. */
+  @Get('firebase/token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 30 } })
+  async firebaseToken(@CurrentUser('sub') userId: string) {
+    return { token: await this.auth.firebaseCustomToken(userId) };
+  }
 }

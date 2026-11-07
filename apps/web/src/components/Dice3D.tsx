@@ -3,7 +3,7 @@ import { SOCKET_EVENTS, type DiceRollDTO } from '@tabletop/shared';
 import { getSocket } from '../lib/socket.js';
 import { DICE_3D_CONTAINER_ID, animateRoll, clearDice, markLanded } from '../lib/dice3d.js';
 
-const SHOW_AFTER_STOP_MS = 1800; // quanto tempo os dados ficam parados na tela
+const SHOW_AFTER_STOP_MS = 3800; // quanto tempo os dados ficam parados na tela
 
 /**
  * Camada transparente por cima da mesa: cada rolagem que chega pelo socket

@@ -136,6 +136,8 @@ export interface DiceRollDTO {
   userId: string;
   userDisplayName?: string;
   formula: string;
+  /** o que foi rolado, ex.: "Machadão — Dano" (rolagens vindas da Ficha) */
+  label?: string;
   result: number;
   breakdown: RollBreakdown;
   visibility: RollVisibility;
