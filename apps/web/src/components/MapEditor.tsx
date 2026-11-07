@@ -205,6 +205,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
                 draggable={editable}
                 gridSize={scene.gridSize}
                 snap={snap && scene.gridType === 'SQUARE'}
+                zoom={scale}
                 onSelect={() => setSelectedId(t.id)}
                 onDragEnd={(x, y) => onTokenChange(t.id, { x, y })}
                 onTransformEnd={(attrs) => onTokenChange(t.id, attrs)}

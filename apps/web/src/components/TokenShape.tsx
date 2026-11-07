@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Group, Rect, Text, Transformer, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import type { TokenDTO } from '@tabletop/shared';
-import { selectionGlow, transformerStyle } from './selectionStyle.js';
+import { GLOW_COLOR, selectionGlow, transformerStyle } from './selectionStyle.js';
 
 // hook simples: carrega um HTMLImageElement a partir de uma URL (ou null)
 function useHtmlImage(url?: string | null): HTMLImageElement | null {
@@ -31,10 +31,18 @@ interface Props {
   draggable: boolean;
   gridSize: number;
   snap: boolean;
+  zoom: number; // zoom do mapa: o nome do selecionado fica do mesmo tamanho na tela
   onSelect: () => void;
   onDragEnd: (x: number, y: number) => void;
   onTransformEnd: (attrs: { x: number; y: number; width: number; height: number; rotation: number }) => void;
 }
+
+// Nome em cima do token selecionado (em pixels de tela, já descontando o zoom)
+const NAME_SIZE = 14;
+const NAME_GAP = 6; // entre o token e o nome
+const NAME_MAX_WIDTH = 320;
+// o botão de girar sobe para ficar acima do nome, e não por cima dele
+const ROTATE_OFFSET_WITH_NAME = transformerStyle.rotateAnchorOffset + NAME_SIZE + NAME_GAP;
 
 // arredonda para o canto da célula mais próxima
 function snapValue(v: number, grid: number, enabled: boolean): number {
@@ -48,10 +56,15 @@ export function TokenShape({
   draggable,
   gridSize,
   snap,
+  zoom,
   onSelect,
   onDragEnd,
   onTransformEnd,
 }: Props) {
+  // metade da altura que o token ocupa na tela, já girado: o nome fica logo acima
+  const angle = (token.rotation * Math.PI) / 180;
+  const halfHeight =
+    (Math.abs(token.width * Math.sin(angle)) + Math.abs(token.height * Math.cos(angle))) / 2;
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const image = useHtmlImage(token.imageUrl);
@@ -144,12 +157,34 @@ export function TokenShape({
         {token.isLocked && (
           <Text text="🔒" x={token.width - 16} y={2} fontSize={12} listening={false} />
         )}
+        {selected && (
+          // nome na cor do brilho; o grupo no centro desfaz o giro do token (fica na horizontal)
+          <Group x={token.width / 2} y={token.height / 2} rotation={-token.rotation} listening={false}>
+            <Text
+              text={token.name}
+              width={NAME_MAX_WIDTH / zoom}
+              offsetX={NAME_MAX_WIDTH / zoom / 2}
+              y={-halfHeight - (NAME_GAP + NAME_SIZE) / zoom}
+              align="center"
+              wrap="none"
+              ellipsis
+              fontSize={NAME_SIZE / zoom}
+              fontStyle="bold"
+              fontFamily="'Segoe UI', system-ui, sans-serif"
+              fill={GLOW_COLOR}
+              shadowColor="#000000"
+              shadowBlur={4 / zoom}
+              shadowOpacity={0.9}
+            />
+          </Group>
+        )}
       </Group>
       {selected && draggable && (
         <Transformer
           ref={trRef}
           rotateEnabled
           {...transformerStyle}
+          rotateAnchorOffset={ROTATE_OFFSET_WITH_NAME}
           boundBoxFunc={(oldBox, newBox) => (newBox.width < 10 || newBox.height < 10 ? oldBox : newBox)}
         />
       )}
