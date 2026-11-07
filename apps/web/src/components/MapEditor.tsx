@@ -49,6 +49,32 @@ interface Props {
 export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, fog, fogPaintMode, fogBrush, brushSize, onFogPaint, onFogBrush }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
+
+  // O mapa ocupa todo o espaço da cena: o Stage acompanha o tamanho da área (e da janela)
+  const areaRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const area = areaRef.current;
+    if (!area) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setView({ w: Math.floor(entry.contentRect.width), h: Math.floor(entry.contentRect.height) }),
+    );
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, []);
+
+  // Ao abrir uma cena: enquadra o mapa inteiro, centralizado (uma vez por cena)
+  const framedScene = useRef<string | null>(null);
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !view.w || !view.h || framedScene.current === scene.id) return;
+    framedScene.current = scene.id;
+    const fit = Math.min(1, (view.w * 0.92) / scene.width, (view.h * 0.86) / scene.height);
+    const next = Math.max(0.2, fit);
+    stage.scale({ x: next, y: next });
+    stage.position({ x: (view.w - scene.width * next) / 2, y: (view.h - scene.height * next) / 2 });
+    setScale(next);
+  }, [scene.id, scene.width, scene.height, view.w, view.h]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
   const background = useHtmlImage(scene.backgroundUrl ? assetUrl(scene.backgroundUrl) : null);
@@ -129,15 +155,12 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
     setScale(newScale);
   }
 
-  const viewW = Math.min(scene.width, typeof window !== 'undefined' ? window.innerWidth - 40 : 960);
-  const viewH = Math.min(scene.height, 640);
-
   return (
-    <div className="map-editor" aria-label="Editor de mapa">
+    <div className="map-editor" aria-label="Editor de mapa" ref={areaRef}>
       <Stage
         ref={stageRef}
-        width={viewW}
-        height={viewH}
+        width={view.w || 1}
+        height={view.h || 1}
         draggable={!fogPaintMode} // sem pan enquanto pinta névoa
         onWheel={onWheel}
         onMouseDown={(e) => {
@@ -161,7 +184,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
           if (painting.current) flushPaint();
           painting.current = false;
         }}
-        style={{ background: '#0f0c08', borderRadius: 8, cursor: fogPaintMode ? 'crosshair' : 'grab' }}
+        style={{ cursor: fogPaintMode ? 'crosshair' : 'grab' }}
       >
         <Layer>
           <Rect name="background" width={scene.width} height={scene.height} fill="#1b140c" />
