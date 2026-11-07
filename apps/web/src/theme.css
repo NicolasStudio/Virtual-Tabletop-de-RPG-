@@ -387,6 +387,7 @@ button.btn.ghost:hover { border-color: var(--accent); background: var(--bg-elev)
   gap: 4px;
 }
 .roll-line {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -422,7 +423,31 @@ button.btn.ghost:hover { border-color: var(--accent); background: var(--bg-elev)
 .roll-die.min { border-color: var(--danger); color: var(--danger); }
 .roll-die.dropped { opacity: 0.45; text-decoration: line-through; }
 .roll-mod { font-size: 13px; font-weight: 700; color: var(--text-dim); }
-.roll-label { font-weight: 700; color: var(--accent-strong); } /* "Machadão — Dano" (rolagem pela Ficha) */
+/* rolagem de arma pela Ficha: cartão com personagem, arma, conta e total */
+.roll-card {
+  flex-shrink: 0; /* no histórico em coluna, o cartão não é espremido: a lista rola */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-strong);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.roll-card-who { font-size: 14px; color: var(--accent-strong); }
+.roll-card-what { margin-top: -3px; }
+.roll-card-box {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--panel);
+  text-align: center;
+  font-size: 12px;
+}
+.roll-card-total { font-size: 18px; font-weight: 800; color: var(--text); }
 
 /* combat tracker */
 button.btn.sm { padding: 6px 10px; font-size: 13px; }
@@ -555,6 +580,10 @@ button.btn.sm { padding: 6px 10px; font-size: 13px; }
   box-shadow: 8px 0 28px rgba(0, 0, 0, 0.5);
 }
 .left-drawer.beside-lib { left: min(380px, 92vw); }
+/* no painel de Dados o histórico ocupa toda a altura que sobra, com rolagem própria */
+.left-drawer { display: flex; flex-direction: column; overflow: hidden; }
+.left-drawer .dice-panel { flex: 1; min-height: 0; }
+.left-drawer .roll-log { flex: 1; min-height: 0; max-height: none; }
 .drawer-actions { display: flex; gap: 6px; }
 a.drawer-close { text-decoration: none; }
 

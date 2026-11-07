@@ -23,7 +23,7 @@ export const FICHA_MSG = {
   askLogin: 'ficha:pedir-login', // Ficha -> mesa
   login: 'ficha:login', // mesa -> Ficha: { token }
   loginError: 'ficha:login-erro', // mesa -> Ficha: { message }
-  // Ficha -> mesa: { formula, label } — botões 🎲/💥 das armas (Js/scriptArmas.js da Ficha);
+  // Ficha -> mesa: { formula, label, character, expression } — botões 🎲/💥 das armas (Js/scriptArmas.js da Ficha);
   // a mesa rola no servidor, pública, como qualquer rolagem
   roll: 'ficha:rolar',
 } as const;

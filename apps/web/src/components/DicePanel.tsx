@@ -23,44 +23,62 @@ function diceValues(roll: DiceRollDTO) {
   });
 }
 
-function RollLine({ roll }: { roll: DiceRollDTO }) {
-  const vis =
-    roll.visibility === 'PUBLIC' ? '' : roll.visibility === 'GM' ? ' 🛡️' : ' 🔒';
+const visibilityIcon = (roll: DiceRollDTO) =>
+  roll.visibility === 'PUBLIC' ? '' : roll.visibility === 'GM' ? ' 🛡️' : ' 🔒';
+
+// "[d8 6] [d8 3] +3": cada dado com o valor (máximo em destaque, 1 em vermelho) e o modificador
+function DiceChips({ roll }: { roll: DiceRollDTO }) {
   const mod = roll.breakdown.modifier;
+  return (
+    <span className="roll-dice">
+      {diceValues(roll).map((d, i) => (
+        <span
+          key={i}
+          className={['roll-die', d.dropped && 'dropped', d.value === d.sides && 'max', d.value === 1 && 'min']
+            .filter(Boolean)
+            .join(' ')}
+          title={d.dropped ? `d${d.sides} (não contou)` : `d${d.sides}`}
+        >
+          <small>d{d.sides}</small>
+          {d.value}
+        </span>
+      ))}
+      {mod !== 0 && <span className="roll-mod">{mod > 0 ? `+${mod}` : mod}</span>}
+    </span>
+  );
+}
+
+function RollLine({ roll }: { roll: DiceRollDTO }) {
   return (
     <li className="roll-line">
       <span className="roll-total">{roll.result}</span>
       <span className="roll-meta">
         <span>
-          <strong>{roll.userDisplayName ?? 'Alguém'}</strong> ·{' '}
-          {roll.label ? (
-            <>
-              <span className="roll-label">{roll.label}</span> <span className="muted">({roll.formula})</span>
-            </>
-          ) : (
-            roll.formula
-          )}
-          {vis}
+          <strong>{roll.userDisplayName ?? 'Alguém'}</strong> · {roll.formula}
+          {visibilityIcon(roll)}
         </span>
-        <span className="roll-dice">
-          {diceValues(roll).map((d, i) => (
-            <span
-              key={i}
-              className={[
-                'roll-die',
-                d.dropped && 'dropped',
-                d.value === d.sides && 'max',
-                d.value === 1 && 'min',
-              ].filter(Boolean).join(' ')}
-              title={d.dropped ? `d${d.sides} (não contou)` : `d${d.sides}`}
-            >
-              <small>d{d.sides}</small>
-              {d.value}
-            </span>
-          ))}
-          {mod !== 0 && <span className="roll-mod">{mod > 0 ? `+${mod}` : mod}</span>}
-        </span>
+        <DiceChips roll={roll} />
       </span>
+    </li>
+  );
+}
+
+// Rolagem de arma pela Ficha: personagem, arma, a conta com os atributos e o total
+function RollCard({ roll }: { roll: DiceRollDTO }) {
+  const player = roll.userDisplayName ?? 'Alguém';
+  return (
+    <li className="roll-card">
+      <strong className="roll-card-who">{roll.character || player}</strong>
+      <span className="roll-card-what">
+        {roll.label}
+        {roll.character && <span className="muted"> · {player}</span>}
+        {visibilityIcon(roll)}
+      </span>
+      <span className="roll-card-box" title={roll.formula}>
+        {roll.expression || roll.formula}
+      </span>
+      {roll.breakdown.dice.length > 0 && <DiceChips roll={roll} />}
+      <span className="roll-card-box roll-card-total">{roll.result}</span>
     </li>
   );
 }
@@ -128,7 +146,7 @@ export function DicePanel({ dice }: Props) {
             Nenhuma rolagem ainda.
           </li>
         ) : (
-          rolls.map((r) => <RollLine key={r.id} roll={r} />)
+          rolls.map((r) => (r.label ? <RollCard key={r.id} roll={r} /> : <RollLine key={r.id} roll={r} />))
         )}
       </ul>
     </div>
