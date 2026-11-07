@@ -5,7 +5,10 @@ import { whenLanded } from '../lib/dice3d.js';
 
 export interface RollRequest {
   formula: string;
-  label?: string; // o que foi rolado, ex.: "Machadão — Dano" (rolagens vindas da Ficha)
+  // rolagens vindas da Ficha: o que foi rolado, o personagem e a conta com os atributos
+  label?: string; // ex.: "Machadão — Dano"
+  character?: string; // ex.: "Gailivera"
+  expression?: string; // ex.: "1d8 + FOR"
   visibility?: 'PUBLIC' | 'GM' | 'PRIVATE';
   advantage?: boolean;
   disadvantage?: boolean;

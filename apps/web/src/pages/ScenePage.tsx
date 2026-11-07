@@ -569,7 +569,7 @@ export function ScenePage() {
         open={fichaOpen}
         onClose={() => setFichaOpen(false)}
         // botões das armas na Ficha: rolagem pública, com o nome da arma no histórico
-        onRoll={(formula, label) => dice.rollDice({ formula, label, visibility: 'PUBLIC' })}
+        onRoll={(roll) => dice.rollDice({ ...roll, visibility: 'PUBLIC' })}
       />
 
       {combatOpen && (

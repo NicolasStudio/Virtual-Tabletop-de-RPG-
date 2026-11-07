@@ -141,7 +141,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     body: {
       campaignId: string;
       formula: string;
-      label?: string; // ex.: "Machadão — Dano" (rolagem pela Ficha)
+      // rolagem pela Ficha: o que foi rolado, o personagem e a conta com os atributos por nome
+      label?: string; // ex.: "Machadão — Dano"
+      character?: string; // ex.: "Gailivera"
+      expression?: string; // ex.: "1d8 + FOR"
       visibility?: 'PUBLIC' | 'GM' | 'PRIVATE';
       advantage?: boolean;
       disadvantage?: boolean;
@@ -160,7 +163,11 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
 
     const visibility = body.visibility ?? 'PUBLIC';
-    const label = typeof body.label === 'string' ? body.label.trim().slice(0, 80) || undefined : undefined;
+    const text = (value: unknown, max: number) =>
+      typeof value === 'string' ? value.trim().slice(0, max) || undefined : undefined;
+    const label = text(body.label, 80);
+    const character = label ? text(body.character, 80) : undefined;
+    const expression = label ? text(body.expression, 100) : undefined;
     const user = await this.prisma.user.findUnique({ where: { id: data.userId }, select: { displayName: true } });
     const saved = await this.prisma.diceRoll.create({
       data: {
@@ -168,8 +175,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         userId: data.userId,
         formula: body.formula,
         result: breakdown.total,
-        // o rótulo fica junto do detalhe (JSON), sem coluna nova no banco
-        breakdown: (label ? { ...breakdown, label } : breakdown) as object,
+        // rótulo, personagem e conta ficam junto do detalhe (JSON), sem coluna nova no banco
+        breakdown: (label ? { ...breakdown, label, character, expression } : breakdown) as object,
         visibility,
       },
     });
@@ -181,6 +188,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       userDisplayName: user?.displayName,
       formula: body.formula,
       label,
+      character,
+      expression,
       result: breakdown.total,
       breakdown,
       visibility,

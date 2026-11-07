@@ -138,6 +138,10 @@ export interface DiceRollDTO {
   formula: string;
   /** o que foi rolado, ex.: "Machadão — Dano" (rolagens vindas da Ficha) */
   label?: string;
+  /** personagem da Ficha que rolou, ex.: "Gailivera" */
+  character?: string;
+  /** a conta como o jogador lê, com os atributos por nome, ex.: "1d8 + FOR" */
+  expression?: string;
   result: number;
   breakdown: RollBreakdown;
   visibility: RollVisibility;

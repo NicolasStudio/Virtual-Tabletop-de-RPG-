@@ -6,7 +6,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   /** rolagem pedida pela Ficha (botões das armas); a mesa rola no servidor */
-  onRoll: (formula: string, label: string) => void;
+  onRoll: (roll: { formula: string; label: string; character?: string; expression?: string }) => void;
 }
 
 // Largura da gaveta: arrastando a borda esquerda. Fica salva neste navegador e vai
@@ -74,10 +74,16 @@ export function FichaDrawer({ open, onClose, onRoll }: Props) {
       const frame = frameRef.current?.contentWindow;
       if (!frame || e.source !== frame || e.origin !== FICHA_ORIGIN) return;
       if (e.data?.type === FICHA_MSG.roll) {
-        const { formula, label } = e.data;
-        // o servidor valida a fórmula; aqui só barra o que nem é texto
+        const { formula, label, character, expression } = e.data;
+        const text = (value: unknown, max: number) => (typeof value === 'string' ? value.slice(0, max) : undefined);
+        // o servidor valida a fórmula e corta os textos; aqui só barra o que nem é texto
         if (typeof formula === 'string' && formula.length <= 100) {
-          onRollRef.current(formula, typeof label === 'string' ? label.slice(0, 80) : '');
+          onRollRef.current({
+            formula,
+            label: text(label, 80) ?? '',
+            character: text(character, 80),
+            expression: text(expression, 100),
+          });
         }
         return;
       }
