@@ -1,34 +1,72 @@
 import { useState } from 'react';
 import type { DiceRollDTO } from '@tabletop/shared';
-import { useDiceRolls, type RollRequest } from '../hooks/useDiceRolls.js';
+import type { useDiceRolls, RollRequest } from '../hooks/useDiceRolls.js';
 
 const DICE = [4, 6, 8, 10, 12, 20, 100];
 
 interface Props {
-  campaignId: string;
+  // o histórico vem da cena (ScenePage): continua quando o painel fecha
+  dice: ReturnType<typeof useDiceRolls>;
   canSeeGmVisibility?: boolean; // mantido por compat; visibilidade agora é só Pública/Privada
 }
 
+// Cada dado da rolagem com o próprio valor. Em kh/kl (ex.: vantagem), os que não
+// contaram para o total ficam apagados e riscados.
+function diceValues(roll: DiceRollDTO) {
+  return roll.breakdown.dice.flatMap((group) => {
+    const kept = [...group.kept];
+    return group.rolls.map((value) => {
+      const i = kept.indexOf(value);
+      if (i >= 0) kept.splice(i, 1);
+      return { sides: group.sides, value, dropped: i < 0 };
+    });
+  });
+}
+
 function RollLine({ roll }: { roll: DiceRollDTO }) {
-  const dice = roll.breakdown.dice
-    .map((d) => `${d.rolls.length}d${d.sides}[${d.rolls.join(',')}]`)
-    .join(' ');
   const vis =
     roll.visibility === 'PUBLIC' ? '' : roll.visibility === 'GM' ? ' 🛡️' : ' 🔒';
+  const mod = roll.breakdown.modifier;
   return (
     <li className="roll-line">
       <span className="roll-total">{roll.result}</span>
       <span className="roll-meta">
-        <strong>{roll.userDisplayName ?? 'Alguém'}</strong> · {roll.formula}
-        {vis}
-        <span className="muted roll-detail"> {dice} {roll.breakdown.modifier ? `(mod ${roll.breakdown.modifier >= 0 ? '+' : ''}${roll.breakdown.modifier})` : ''}</span>
+        <span>
+          <strong>{roll.userDisplayName ?? 'Alguém'}</strong> ·{' '}
+          {roll.label ? (
+            <>
+              <span className="roll-label">{roll.label}</span> <span className="muted">({roll.formula})</span>
+            </>
+          ) : (
+            roll.formula
+          )}
+          {vis}
+        </span>
+        <span className="roll-dice">
+          {diceValues(roll).map((d, i) => (
+            <span
+              key={i}
+              className={[
+                'roll-die',
+                d.dropped && 'dropped',
+                d.value === d.sides && 'max',
+                d.value === 1 && 'min',
+              ].filter(Boolean).join(' ')}
+              title={d.dropped ? `d${d.sides} (não contou)` : `d${d.sides}`}
+            >
+              <small>d{d.sides}</small>
+              {d.value}
+            </span>
+          ))}
+          {mod !== 0 && <span className="roll-mod">{mod > 0 ? `+${mod}` : mod}</span>}
+        </span>
       </span>
     </li>
   );
 }
 
-export function DicePanel({ campaignId }: Props) {
-  const { rolls, rollDice, clear } = useDiceRolls(campaignId);
+export function DicePanel({ dice }: Props) {
+  const { rolls, rollDice, clear } = dice;
   const [formula, setFormula] = useState('');
   const [visibility, setVisibility] = useState<RollRequest['visibility']>('PUBLIC');
 
