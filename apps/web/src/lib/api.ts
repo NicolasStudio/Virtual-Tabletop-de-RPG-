@@ -84,6 +84,8 @@ export const authApi = {
     }>,
   logout: () => api('/auth/logout', { method: 'POST' }),
   me: () => api('/auth/me') as Promise<PublicUser>,
+  // login da Ficha aberta dentro da mesa (FichaDrawer)
+  firebaseToken: () => api('/auth/firebase/token') as Promise<{ token: string }>,
   refresh: () =>
     api('/auth/refresh', { method: 'POST' }, false) as Promise<{ accessToken: string; user: PublicUser }>,
   forgot: (email: string) =>

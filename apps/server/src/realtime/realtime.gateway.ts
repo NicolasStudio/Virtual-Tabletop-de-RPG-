@@ -137,7 +137,15 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage(SOCKET_EVENTS.DICE_ROLL)
   async onDiceRoll(
     @ConnectedSocket() client: Socket,
-    @MessageBody() body: { campaignId: string; formula: string; visibility?: 'PUBLIC' | 'GM' | 'PRIVATE'; advantage?: boolean; disadvantage?: boolean },
+    @MessageBody()
+    body: {
+      campaignId: string;
+      formula: string;
+      label?: string; // ex.: "Machadão — Dano" (rolagem pela Ficha)
+      visibility?: 'PUBLIC' | 'GM' | 'PRIVATE';
+      advantage?: boolean;
+      disadvantage?: boolean;
+    },
   ) {
     const data = client.data as SocketData;
     const role = await this.roleFor(client, body.campaignId);
@@ -152,6 +160,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
 
     const visibility = body.visibility ?? 'PUBLIC';
+    const label = typeof body.label === 'string' ? body.label.trim().slice(0, 80) || undefined : undefined;
     const user = await this.prisma.user.findUnique({ where: { id: data.userId }, select: { displayName: true } });
     const saved = await this.prisma.diceRoll.create({
       data: {
@@ -159,7 +168,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         userId: data.userId,
         formula: body.formula,
         result: breakdown.total,
-        breakdown: breakdown as object,
+        // o rótulo fica junto do detalhe (JSON), sem coluna nova no banco
+        breakdown: (label ? { ...breakdown, label } : breakdown) as object,
         visibility,
       },
     });
@@ -170,6 +180,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       userId: data.userId,
       userDisplayName: user?.displayName,
       formula: body.formula,
+      label,
       result: breakdown.total,
       breakdown,
       visibility,

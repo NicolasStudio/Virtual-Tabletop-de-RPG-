@@ -29,6 +29,21 @@ const tokens = {
   issueRefresh: vi.fn(async () => ({ raw: 'refresh-raw', expiresAt: new Date() })),
 } as any;
 
+const customTokens = { create: vi.fn((uid: string) => `custom-token-de-${uid}`) };
+
+describe('AuthService.firebaseCustomToken', () => {
+  it('gera o token com o uid da Ficha ligado à conta', async () => {
+    const prisma = makePrisma();
+    prisma._users.push({ id: 'u1', firebaseUid: 'fb1' }, { id: 'u2', firebaseUid: null });
+    const svc = new AuthService(prisma as any, tokens, {} as any, customTokens as any);
+
+    await expect(svc.firebaseCustomToken('u1')).resolves.toBe('custom-token-de-fb1');
+    // conta antiga do Tabletop, sem login pela Ficha: não há em que conta entrar
+    await expect(svc.firebaseCustomToken('u2')).rejects.toThrow(/não está ligada/);
+    await expect(svc.firebaseCustomToken('nao-existe')).rejects.toThrow(/não encontrado/);
+  });
+});
+
 describe('AuthService.loginWithFirebase', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let firebase: { verify: ReturnType<typeof vi.fn> };
@@ -38,7 +53,7 @@ describe('AuthService.loginWithFirebase', () => {
     process.env.FIREBASE_PROJECT_ID = 'ficha-ordem-c31d7';
     prisma = makePrisma();
     firebase = { verify: vi.fn(async () => ({ uid: 'fb1', email: 'ana@exemplo.com' })) };
-    svc = new AuthService(prisma as any, tokens, firebase as any);
+    svc = new AuthService(prisma as any, tokens, firebase as any, customTokens as any);
   });
   afterEach(() => {
     delete process.env.FIREBASE_PROJECT_ID;
