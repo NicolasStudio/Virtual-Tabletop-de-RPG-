@@ -307,6 +307,59 @@ export function ScenePage() {
     setCurrent((c) => (c ? { ...c, overlays: c.overlays.filter((o) => o.id !== overlayId) } : c));
   }
 
+  // Token/item arrastado da biblioteca para o mapa, centrado onde caiu (com o encaixe
+  // na grade). Fora da tela, o próprio token volta; se já está no mapa, entra uma
+  // cópia numerada ("Zumbi 2"), marcada com o original (groupId) para não aparecer
+  // na biblioteca, que continua com um só.
+  async function dropTokenOnMap(tokenId: string, px: number, py: number) {
+    if (!current || !isGm) return;
+    const source = current.tokens.find((t) => t.id === tokenId);
+    if (!source) return;
+    const grid = current.scene.gridSize;
+    const snapOn = snap && current.scene.gridType === 'SQUARE' && grid > 0;
+    const fit = (v: number) => (snapOn ? Math.round(v / grid) * grid : v);
+    const x = fit(px - source.width / 2);
+    const y = fit(py - source.height / 2);
+
+    if (source.isOnMap === false) return onTokenChange(source.id, { isOnMap: true, x, y });
+
+    const originalId = source.groupId ?? source.id;
+    const original = current.tokens.find((t) => t.id === originalId) ?? source;
+    const names = new Set(current.tokens.map((t) => t.name));
+    let number = 2;
+    while (names.has(`${original.name} ${number}`)) number++;
+    try {
+      const token = await scenesApi.createToken(campaignId, current.scene.id, {
+        name: `${original.name} ${number}`,
+        x,
+        y,
+        width: source.width,
+        height: source.height,
+        kind: source.kind,
+        ...(source.imageAssetId ? { imageAssetId: source.imageAssetId } : {}),
+        ...(source.imageUrl ? { imageUrl: source.imageUrl } : {}),
+        ...(original.folderId ? { folderId: original.folderId } : {}),
+        groupId: originalId,
+      });
+      setCurrent((c) => (c ? { ...c, tokens: upsertById(c.tokens, token) } : c));
+    } catch (e: any) {
+      setNotice(e?.message ?? 'Falha ao colocar o token no mapa.');
+    }
+  }
+
+  // Biblioteca: item arrastado para outra pasta (folderId null = sem pasta)
+  async function moveToFolder(kind: FolderKind, id: string, folderId: string | null) {
+    if (kind === 'MAP') return onOverlayChange(id, { folderId });
+    if (kind === 'TOKEN' || kind === 'ITEM') return onTokenChange(id, { folderId });
+    setScenes((list) => list.map((s) => (s.id === id ? { ...s, folderId } : s))); // na hora
+    try {
+      await scenesApi.update(campaignId, id, { folderId });
+    } catch (e: any) {
+      setNotice(e?.message ?? 'Falha ao mover a cena.');
+      setScenes(await scenesApi.list(campaignId)); // volta ao que está salvo
+    }
+  }
+
   // --- névoa de guerra (só GM) ---
   function onFogPaint(cells: string[], mode: 'reveal' | 'hide') {
     if (!current || !isGm) return;
@@ -552,6 +605,8 @@ export function ScenePage() {
               brushSize={brushSize}
               onFogPaint={onFogPaint}
               onFogBrush={onFogBrush}
+              onDropToken={isGm ? dropTokenOnMap : undefined}
+              onDeleteToken={deleteToken}
             />
           ) : (
             <div className="card scene-empty">
@@ -589,6 +644,7 @@ export function ScenePage() {
               onPlaceOverlay={(overlayId) => onOverlayChange(overlayId, { isOnMap: true })}
               onPlaceToken={(tokenId) => onTokenChange(tokenId, { isOnMap: true })}
               onImport={importImage}
+              onMove={moveToFolder}
             />
           </aside>
         </>

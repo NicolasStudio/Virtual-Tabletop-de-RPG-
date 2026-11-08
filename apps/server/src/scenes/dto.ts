@@ -49,6 +49,8 @@ export class CreateTokenDto {
   @IsOptional() @IsString() characterId?: string;
   @IsOptional() @IsString() ownerUserId?: string;
   @IsOptional() @IsString() layer?: string;
+  // cópia no mapa de um token da biblioteca: id do original (a biblioteca só lista os originais)
+  @IsOptional() @IsString() groupId?: string;
 }
 
 export class UpdateTokenDto {
@@ -85,6 +87,7 @@ export class CreateMapOverlayDto {
 
 export class UpdateMapOverlayDto {
   @IsOptional() @IsString() @MaxLength(120) name?: string;
+  @IsOptional() @IsString() folderId?: string | null; // arrastar para outra pasta da biblioteca (null = sem pasta)
   @IsOptional() @IsNumber() x?: number;
   @IsOptional() @IsNumber() y?: number;
   @IsOptional() @IsNumber() @Min(1) width?: number;

@@ -104,7 +104,7 @@ export interface TokenDTO {
   isLocked: boolean;
   isHidden: boolean; // o servidor remove tokens ocultos do payload de jogadores
   isOnMap?: boolean; // false = fora da tela (continua na biblioteca da cena)
-  groupId?: string | null;
+  groupId?: string | null; // cópia no mapa: id do token original (a biblioteca só lista originais)
   stats: Record<string, unknown>;
 }
 
