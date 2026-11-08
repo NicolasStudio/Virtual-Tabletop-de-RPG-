@@ -1,6 +1,84 @@
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, type DragEvent } from 'react';
 import type { SceneDTO, TokenDTO, AssetFolderDTO, FolderKind, TokenKind, MapOverlayDTO } from '@tabletop/shared';
 import { foldersApi, buildFolderTree, type FolderNode } from '../lib/folders.js';
+import { libraryDragType as dragType } from '../lib/libraryDrag.js';
+
+// ===== Arrastar para outra pasta (só o mestre) =====
+// Cada seção tem o próprio tipo de arraste: um token só cai em pasta de tokens, etc.
+// Soltar numa pasta move para ela; soltar no resto da seção tira da pasta (folderId null).
+// Tokens e itens também podem ser soltos no mapa (MapEditor).
+type MoveFn = (kind: FolderKind, id: string, folderId: string | null) => void;
+const DragContext = createContext<{ isGm: boolean; onMove?: MoveFn }>({ isGm: false });
+
+/** Props de um item arrastável da seção `kind`. */
+function useDraggable(kind: FolderKind, id: string) {
+  const { isGm, onMove } = useContext(DragContext);
+  if (!isGm || !onMove) return {};
+  return {
+    draggable: true,
+    onDragStart: (e: DragEvent) => {
+      e.dataTransfer.setData(dragType(kind), id);
+      e.dataTransfer.effectAllowed = 'copyMove'; // mover de pasta ou soltar no mapa
+      // enquanto arrasta, o fundo escuro da biblioteca deixa o item cair no mapa
+      document.body.classList.add('lib-dragging');
+    },
+    onDragEnd: () => document.body.classList.remove('lib-dragging'),
+  };
+}
+
+/** Área que recebe itens da seção `kind` e os põe na pasta `folderId` (null = sem pasta). */
+function useDropTarget(kind: FolderKind, folderId: string | null, onDropped?: () => void) {
+  const { isGm, onMove } = useContext(DragContext);
+  const [over, setOver] = useState(false);
+  if (!isGm || !onMove) return { over: false, dropProps: {} };
+  const accepts = (e: DragEvent) => e.dataTransfer.types.includes(dragType(kind));
+  return {
+    over,
+    dropProps: {
+      onDragOver: (e: DragEvent) => {
+        if (!accepts(e)) return;
+        e.preventDefault();
+        e.stopPropagation(); // só a pasta mais de dentro fica destacada
+        e.dataTransfer.dropEffect = 'move';
+        setOver(true);
+      },
+      onDragLeave: (e: DragEvent) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false);
+      },
+      onDrop: (e: DragEvent) => {
+        setOver(false);
+        const id = e.dataTransfer.getData(dragType(kind));
+        if (!id) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onMove(kind, id, folderId);
+        onDropped?.();
+      },
+    },
+  };
+}
+
+// Pasta aberta ou fechada: começa fechada e cada pasta lembra o que você deixou
+function useFolderOpen(folderId: string) {
+  const key = `tabletop:pasta-aberta:${folderId}`;
+  const [open, setOpenState] = useState(() => {
+    try {
+      return localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  });
+  function setOpen(value: boolean) {
+    setOpenState(value);
+    try {
+      if (value) localStorage.setItem(key, '1');
+      else localStorage.removeItem(key);
+    } catch {
+      /* sem localStorage: vale só nesta visita */
+    }
+  }
+  return [open, setOpen] as const;
+}
 
 interface Props {
   campaignId: string;
@@ -19,6 +97,8 @@ interface Props {
   onPlaceToken: (tokenId: string) => void; // idem para tokens e itens
   // disparado quando o usuário pede para importar/subir uma imagem
   onImport?: (kind: FolderKind, folderId: string | null) => void;
+  // item arrastado para outra pasta (folderId null = sem pasta)
+  onMove?: MoveFn;
 }
 
 const SECTION_META: { kind: FolderKind; icon: string; label: string }[] = [
@@ -69,6 +149,7 @@ export function LibraryPanel(props: Props) {
   }
 
   return (
+    <DragContext.Provider value={{ isGm, onMove: props.onMove }}>
     <aside className="library" aria-label="Biblioteca da campanha">
       {SECTION_META.map((meta) => (
         <LibrarySection
@@ -95,6 +176,7 @@ export function LibraryPanel(props: Props) {
         />
       ))}
     </aside>
+    </DragContext.Provider>
   );
 }
 
@@ -140,16 +222,20 @@ function LibrarySection({
   onDeleteFolder: (f: AssetFolderDTO) => void;
 }) {
   const [open, setOpen] = useState(true);
+  // soltar fora das pastas (título ou itens soltos da seção) tira da pasta
+  const { over, dropProps } = useDropTarget(meta.kind, null, () => setOpen(true));
   const isScene = meta.kind === 'SCENE';
   const isItem = meta.kind === 'ITEM';
   const isMap = meta.kind === 'MAP';
   const isTokenLike = meta.kind === 'TOKEN' || isItem; // seções que listam tokens
 
-  // tokens desta seção: ITEM lista kind=ITEM; TOKEN lista o resto (personagem/monstro/npc)
+  // tokens desta seção: ITEM lista kind=ITEM; TOKEN lista o resto (personagem/monstro/npc).
+  // Cópias colocadas no mapa (groupId) não entram: a biblioteca mostra só o original.
+  const originals = tokens.filter((t) => !t.groupId);
   const sectionTokens = isItem
-    ? tokens.filter((t) => t.kind === 'ITEM')
+    ? originals.filter((t) => t.kind === 'ITEM')
     : meta.kind === 'TOKEN'
-    ? tokens.filter((t) => t.kind !== 'ITEM')
+    ? originals.filter((t) => t.kind !== 'ITEM')
     : [];
 
   // itens sem pasta (folderId null) do tipo desta seção
@@ -158,7 +244,7 @@ function LibrarySection({
   const looseOverlays = isMap ? overlays.filter((o) => !o.folderId) : [];
 
   return (
-    <section className="lib-section">
+    <section className={`lib-section ${over ? 'drop-over' : ''}`} {...dropProps}>
       <header className="lib-section-head" onClick={() => setOpen((v) => !v)}>
         <span className="lib-chevron">{open ? '▾' : '▸'}</span>
         <span className="lib-icon">{meta.icon}</span>
@@ -291,7 +377,9 @@ function LibraryFolder({
   onRenameFolder: (f: AssetFolderDTO) => void;
   onDeleteFolder: (f: AssetFolderDTO) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useFolderOpen(folder.id);
+  // soltar um item aqui o move para esta pasta (e a abre, para ver onde caiu)
+  const { over, dropProps } = useDropTarget(kind, folder.id, () => setOpen(true));
   const isScene = kind === 'SCENE';
   const isTokenLike = kind === 'TOKEN' || kind === 'ITEM';
   const childScenes = isScene ? scenes.filter((s) => s.folderId === folder.id) : [];
@@ -299,9 +387,9 @@ function LibraryFolder({
   const childOverlays = kind === 'MAP' ? overlays.filter((o) => o.folderId === folder.id) : [];
 
   return (
-    <div className="lib-folder" style={{ marginLeft: depth * 12 }}>
+    <div className={`lib-folder ${over ? 'drop-over' : ''}`} style={{ marginLeft: depth * 12 }} {...dropProps}>
       <div className="lib-folder-head">
-        <button className="lib-folder-toggle" onClick={() => setOpen((v) => !v)}>
+        <button className="lib-folder-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
           {open ? '📂' : '📁'} {folder.name}
         </button>
         {isGm && (
@@ -386,8 +474,9 @@ function SceneRow({
   onOpen: () => void;
   onDelete: () => void;
 }) {
+  const drag = useDraggable('SCENE', scene.id);
   return (
-    <div className={`lib-item ${active ? 'active' : ''}`}>
+    <div className={`lib-item ${active ? 'active' : ''}`} {...drag}>
       <button className="lib-item-name" onClick={onOpen} title="Abrir cena">
         <span className="lib-ico">🏞️</span> {scene.name}
       </button>
@@ -414,8 +503,9 @@ function TokenRow({
   // fora da tela (botão Remover do mapa): aparece apagado; o GM clica para colocar de volta
   const offMap = token.isOnMap === false;
   const what = token.kind === 'ITEM' ? 'item' : 'token';
+  const drag = useDraggable(token.kind === 'ITEM' ? 'ITEM' : 'TOKEN', token.id);
   return (
-    <div className={`lib-item ${offMap ? 'off-map' : ''}`}>
+    <div className={`lib-item ${offMap ? 'off-map' : ''}`} {...drag}>
       {offMap && isGm ? (
         <button className="lib-item-name" onClick={onPlace} title="Fora da tela — clique para colocar de volta no mapa">
           <span className="lib-ico">{kindIcon}</span> {token.name}
@@ -445,8 +535,9 @@ function OverlayRow({
 }) {
   // fora da tela (botão Remover do mapa): aparece apagado; o GM clica para colocar de volta
   const offMap = overlay.isOnMap === false;
+  const drag = useDraggable('MAP', overlay.id);
   return (
-    <div className={`lib-item ${offMap ? 'off-map' : ''}`}>
+    <div className={`lib-item ${offMap ? 'off-map' : ''}`} {...drag}>
       {offMap && isGm ? (
         <button className="lib-item-name" onClick={onPlace} title="Fora da tela — clique para colocar de volta no mapa">
           <span className="lib-ico">🗺️</span> {overlay.name}

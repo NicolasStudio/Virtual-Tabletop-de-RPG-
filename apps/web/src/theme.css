@@ -1144,6 +1144,19 @@ input[type='number'] {
 /* botões sólidos (selecionados) do menu de névoa: texto escuro legível sobre o dourado */
 .fog-menu .btn:not(.ghost):not(.fog-stop) { color: var(--accent-text) !important; }
 
+/* arrastar para outra pasta (mestre): o item mostra a "mão" e a pasta de destino fica marcada */
+.lib-item[draggable='true'] { cursor: grab; }
+/* arrastando da biblioteca: o fundo escuro não segura o item, que pode cair no mapa */
+.lib-dragging .drawer-backdrop { pointer-events: none; }
+.lib-item[draggable='true']:active { cursor: grabbing; }
+.lib-folder.drop-over > .lib-folder-head,
+.lib-section.drop-over > .lib-section-head {
+  outline: 2px dashed var(--accent-strong);
+  outline-offset: -2px;
+  border-radius: 6px;
+  background: var(--bg-elev);
+}
+
 /* mapa, token ou item tirado da tela (Remover): continua na biblioteca, apagado; clique devolve */
 .lib-item.off-map .lib-item-name { opacity: 0.5; font-style: italic; }
 .lib-item.off-map .lib-item-name:hover { opacity: 1; }

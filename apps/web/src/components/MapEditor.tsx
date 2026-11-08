@@ -6,6 +6,7 @@ import { GridLayer } from './GridLayer.js';
 import { TokenShape } from './TokenShape.js';
 import { MapOverlayShape } from './MapOverlayShape.js';
 import { assetUrl } from '../lib/assets.js';
+import { MAP_DROP_KINDS, libraryDragType } from '../lib/libraryDrag.js';
 import type { MapOverlayDTO, SceneFogDTO } from '@tabletop/shared';
 
 // carrega um HTMLImageElement a partir de uma URL (ou null)
@@ -44,9 +45,13 @@ interface Props {
   brushSize: number; // raio do pincel livre (px da cena)
   onFogPaint: (cells: string[], mode: 'reveal' | 'hide') => void;
   onFogBrush: (dots: { x: number; y: number; r: number }[], mode: 'reveal' | 'hide') => void;
+  /** token/item da biblioteca solto no mapa: (x, y) é o ponto da cena onde caiu */
+  onDropToken?: (tokenId: string, x: number, y: number) => void;
+  /** apagar de vez (o Remover das cópias, que não têm lugar na biblioteca) */
+  onDeleteToken?: (tokenId: string) => void;
 }
 
-export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, fog, fogPaintMode, fogBrush, brushSize, onFogPaint, onFogBrush }: Props) {
+export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, fog, fogPaintMode, fogBrush, brushSize, onFogPaint, onFogBrush, onDropToken, onDeleteToken }: Props) {
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
 
@@ -155,8 +160,28 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
     setScale(newScale);
   }
 
+  // Soltar um token/item arrastado da biblioteca: converte o ponto da tela para o da
+  // cena (descontando zoom e arraste do mapa)
+  const dropTypes = MAP_DROP_KINDS.map(libraryDragType);
+  const accepts = (e: React.DragEvent) => !!onDropToken && dropTypes.some((t) => e.dataTransfer.types.includes(t));
+  function onDragOver(e: React.DragEvent) {
+    if (!accepts(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }
+  function onDrop(e: React.DragEvent) {
+    const stage = stageRef.current;
+    if (!stage || !accepts(e)) return;
+    const id = dropTypes.map((t) => e.dataTransfer.getData(t)).find(Boolean);
+    if (!id) return;
+    e.preventDefault();
+    stage.setPointersPositions(e.nativeEvent);
+    const point = stage.getRelativePointerPosition();
+    if (point) onDropToken!(id, point.x, point.y);
+  }
+
   return (
-    <div className="map-editor" aria-label="Editor de mapa" ref={areaRef}>
+    <div className="map-editor" aria-label="Editor de mapa" ref={areaRef} onDragOver={onDragOver} onDrop={onDrop}>
       <Stage
         ref={stageRef}
         width={view.w || 1}
@@ -308,11 +333,17 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
             <button
               className="btn ghost sm"
               onClick={() => {
-                apply({ isOnMap: false });
+                // cópia (groupId) não tem lugar na biblioteca: some de vez
+                if (selToken?.groupId && onDeleteToken) onDeleteToken(selToken.id);
+                else apply({ isOnMap: false });
                 setSelectedOverlayId(null);
                 setSelectedId(null);
               }}
-              title="Tira da tela; continua na biblioteca (clique nele lá para colocar de volta)"
+              title={
+                selToken?.groupId
+                  ? 'Apaga esta cópia (o original continua na biblioteca)'
+                  : 'Tira da tela; continua na biblioteca (clique nele lá para colocar de volta)'
+              }
             >
               🗑 Remover
             </button>
