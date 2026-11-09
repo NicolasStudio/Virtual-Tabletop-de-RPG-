@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Stage, Layer, Rect, Circle, Group, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Rect, Circle, Group, Line, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import type { SceneDTO, TokenDTO } from '@tabletop/shared';
 import { GridLayer } from './GridLayer.js';
@@ -7,7 +7,7 @@ import { TokenShape } from './TokenShape.js';
 import { MapOverlayShape } from './MapOverlayShape.js';
 import { assetUrl } from '../lib/assets.js';
 import { MAP_DROP_KINDS, libraryDragType } from '../lib/libraryDrag.js';
-import type { MapOverlayDTO, SceneFogDTO } from '@tabletop/shared';
+import { isFogPolygon, type MapOverlayDTO, type SceneFogDTO } from '@tabletop/shared';
 
 // carrega um HTMLImageElement a partir de uma URL (ou null)
 function useHtmlImage(url?: string | null): HTMLImageElement | null {
@@ -41,17 +41,25 @@ interface Props {
   onOverlayChange: (overlayId: string, data: Partial<MapOverlayDTO>) => void;
   fog: SceneFogDTO;
   fogPaintMode: 'reveal' | 'hide' | null; // quando != null, o GM está pintando névoa
-  fogBrush: boolean; // true = pincel à mão livre; false = por célula
+  fogTool: FogTool; // pincel à mão livre, por célula ou polígono
   brushSize: number; // raio do pincel livre (px da cena)
   onFogPaint: (cells: string[], mode: 'reveal' | 'hide') => void;
   onFogBrush: (dots: { x: number; y: number; r: number }[], mode: 'reveal' | 'hide') => void;
+  /** polígono fechado [x1, y1, x2, y2, ...] em coordenadas da cena */
+  onFogPolygon: (points: number[], mode: 'reveal' | 'hide') => void;
   /** token/item da biblioteca solto no mapa: (x, y) é o ponto da cena onde caiu */
   onDropToken?: (tokenId: string, x: number, y: number) => void;
   /** apagar de vez (o Remover das cópias, que não têm lugar na biblioteca) */
   onDeleteToken?: (tokenId: string) => void;
 }
 
-export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, fog, fogPaintMode, fogBrush, brushSize, onFogPaint, onFogBrush, onDropToken, onDeleteToken }: Props) {
+export type FogTool = 'brush' | 'cell' | 'polygon';
+
+// Polígono: fecha clicando perto do primeiro ponto (raio em pixels de tela)
+const CLOSE_RADIUS_PX = 12;
+
+export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, onTokenChange, onOverlayChange, fog, fogPaintMode, fogTool, brushSize, onFogPaint, onFogBrush, onFogPolygon, onDropToken, onDeleteToken }: Props) {
+  const fogBrush = fogTool === 'brush';
   const stageRef = useRef<Konva.Stage>(null);
   const [scale, setScale] = useState(1);
 
@@ -126,6 +134,53 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
     }
   }
 
+  // ===== Polígono de névoa =====
+  // Cada clique marca um ponto; fecha clicando no primeiro (ou duplo clique / Enter).
+  // Esc cancela, Backspace desfaz o último ponto.
+  const [polygon, setPolygon] = useState<{ x: number; y: number }[]>([]);
+  const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+  const polygonOn = !!fogPaintMode && fogTool === 'polygon';
+  const nearFirst = (p: { x: number; y: number }) =>
+    polygon.length >= 3 && Math.hypot(p.x - polygon[0].x, p.y - polygon[0].y) <= CLOSE_RADIUS_PX / scale;
+
+  // trocar de ferramenta (ou de esconder/revelar) descarta o polígono pela metade
+  useEffect(() => {
+    setPolygon([]);
+    setHover(null);
+  }, [fogPaintMode, fogTool]);
+
+  function finishPolygon(points = polygon) {
+    // o duplo clique também marca pontos: tira os repetidos no mesmo lugar
+    const clean = points.filter((p, i) => i === 0 || Math.hypot(p.x - points[i - 1].x, p.y - points[i - 1].y) > 1 / scale);
+    if (fogPaintMode && clean.length >= 3) onFogPolygon(clean.flatMap((p) => [p.x, p.y]), fogPaintMode);
+    setPolygon([]);
+  }
+
+  function polygonClick() {
+    const p = pointInScene();
+    if (!p) return;
+    if (nearFirst(p)) finishPolygon();
+    else setPolygon((pts) => [...pts, p]);
+  }
+
+  useEffect(() => {
+    if (!polygonOn) return;
+    function onKey(e: KeyboardEvent) {
+      if (!polygon.length) return;
+      if (e.key === 'Escape') {
+        setPolygon([]);
+        e.stopImmediatePropagation(); // o primeiro Esc só cancela o polígono, não a ferramenta
+      } else if (e.key === 'Enter') {
+        finishPolygon();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        setPolygon((pts) => pts.slice(0, -1));
+      }
+    }
+    window.addEventListener('keydown', onKey, true); // antes do Esc da cena
+    return () => window.removeEventListener('keydown', onKey, true);
+  });
+
   // envia o traço acumulado de uma vez (evita flood de requisições / rate-limit)
   function flushPaint() {
     if (!fogPaintMode) return;
@@ -189,6 +244,10 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
         draggable={!fogPaintMode} // sem pan enquanto pinta névoa
         onWheel={onWheel}
         onMouseDown={(e) => {
+          if (polygonOn) {
+            polygonClick();
+            return;
+          }
           if (fogPaintMode) {
             painting.current = true;
             paintAtPointer();
@@ -203,7 +262,14 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
           }
         }}
         onMouseMove={() => {
+          if (polygonOn) {
+            if (polygon.length) setHover(pointInScene());
+            return;
+          }
           if (fogPaintMode && painting.current) paintAtPointer();
+        }}
+        onDblClick={() => {
+          if (polygonOn) finishPolygon();
         }}
         onMouseUp={() => {
           if (painting.current) flushPaint();
@@ -267,9 +333,13 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
               {/* base: só cobre tudo quando 'Ocultar tudo' (coverAll) */}
               {fog.coverAll && <Rect width={scene.width} height={scene.height} fill="#05040a" />}
               {/* névoa desenhada à mão (brushHide): adiciona névoa onde o GM pintou */}
-              {fog.brushHide.map((d, i) => (
-                <Circle key={`bh-${i}`} x={d.x} y={d.y} radius={d.r} fill="#05040a" />
-              ))}
+              {fog.brushHide.map((d, i) =>
+                isFogPolygon(d) ? (
+                  <Line key={`bh-${i}`} points={d.points} closed fill="#05040a" />
+                ) : (
+                  <Circle key={`bh-${i}`} x={d.x} y={d.y} radius={d.r} fill="#05040a" />
+                ),
+              )}
               {/* FUROS (destination-out): células reveladas */}
               {[...revealed].map((key) => {
                 const [col, row] = key.split(',').map(Number);
@@ -285,18 +355,49 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
                   />
                 );
               })}
-              {/* FUROS: pincel revelar */}
-              {fog.brushReveal.map((d, i) => (
-                <Circle
-                  key={`br-${i}`}
-                  x={d.x}
-                  y={d.y}
-                  radius={d.r}
-                  fill="#000"
-                  globalCompositeOperation="destination-out"
-                />
-              ))}
+              {/* FUROS: pincel e polígonos de revelar */}
+              {fog.brushReveal.map((d, i) =>
+                isFogPolygon(d) ? (
+                  <Line key={`br-${i}`} points={d.points} closed fill="#000" globalCompositeOperation="destination-out" />
+                ) : (
+                  <Circle
+                    key={`br-${i}`}
+                    x={d.x}
+                    y={d.y}
+                    radius={d.r}
+                    fill="#000"
+                    globalCompositeOperation="destination-out"
+                  />
+                ),
+              )}
             </Group>
+          </Layer>
+        )}
+        {/* polígono em andamento: linhas até o mouse, pontos e o primeiro ponto (fecha) */}
+        {polygonOn && polygon.length > 0 && (
+          <Layer listening={false}>
+            <Line
+              points={[...polygon, ...(hover ? [hover] : [])].flatMap((p) => [p.x, p.y])}
+              closed={polygon.length >= 2}
+              fill={fogPaintMode === 'hide' ? 'rgba(5, 4, 10, 0.35)' : 'rgba(255, 255, 255, 0.12)'}
+              stroke="#e4bf63"
+              strokeWidth={2 / scale}
+              dash={[8 / scale, 6 / scale]}
+            />
+            {polygon.map((p, i) => {
+              const closing = i === 0 && hover !== null && nearFirst(hover);
+              return (
+                <Circle
+                  key={i}
+                  x={p.x}
+                  y={p.y}
+                  radius={(i === 0 ? (closing ? 9 : 6) : 4) / scale}
+                  fill={i === 0 ? '#e4bf63' : '#ffffff'}
+                  stroke="#000000"
+                  strokeWidth={1 / scale}
+                />
+              );
+            })}
           </Layer>
         )}
       </Stage>
@@ -321,7 +422,7 @@ export function MapEditor({ scene, tokens, overlays, isGm, canEditToken, snap, o
               onClick={() => apply({ isHidden: !hidden })}
               title={hidden ? 'Está invisível para o jogador — clique para mostrar' : 'Visível — clique para esconder do jogador'}
             >
-              {hidden ? '🙈 Invisível' : '👁 Visível'}
+              {hidden ? '🙈 Invisível' : '🙊 Visível'}
             </button>
             <button
               className={`btn ghost sm ${locked ? 'sel-active' : ''}`}

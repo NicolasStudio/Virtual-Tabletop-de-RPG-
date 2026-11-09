@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CampaignRole, SceneDTO, TokenDTO, MapOverlayDTO, SceneFogDTO } from '@tabletop/shared';
 
@@ -176,6 +176,30 @@ export class ScenesService {
     if (mode === 'reveal') reveal.push(...clean);
     else hide.push(...clean);
     // desenhar/ocultar SEMPRE ativa a névoa (não há mais switch manual)
+    return this.upsertFog(sceneId, {
+      enabled: true,
+      brushReveal: reveal.slice(-5000),
+      brushHide: hide.slice(-5000),
+    });
+  }
+
+  // Polígono de névoa ([x1, y1, x2, y2, ...], fecha sozinho): vai para a mesma lista
+  // do pincel (hide/reveal), então segue a mesma ordem de desenho dos círculos
+  async paintFogPolygon(
+    campaignId: string,
+    sceneId: string,
+    points: number[],
+    mode: 'reveal' | 'hide',
+  ): Promise<SceneFogDTO> {
+    await this.assertSceneInCampaign(campaignId, sceneId);
+    const clean = Array.isArray(points) ? points.filter((n) => Number.isFinite(n)).slice(0, 400) : [];
+    if (clean.length < 6 || clean.length % 2 !== 0) {
+      throw new BadRequestException('O polígono precisa de pelo menos 3 pontos.');
+    }
+    const row = await this.prisma.sceneFog.findUnique({ where: { sceneId } });
+    const reveal = Array.isArray(row?.brushReveal) ? (row!.brushReveal as any[]) : [];
+    const hide = Array.isArray(row?.brushHide) ? (row!.brushHide as any[]) : [];
+    (mode === 'reveal' ? reveal : hide).push({ points: clean });
     return this.upsertFog(sceneId, {
       enabled: true,
       brushReveal: reveal.slice(-5000),
