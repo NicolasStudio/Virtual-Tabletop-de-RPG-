@@ -43,8 +43,8 @@ export interface SceneFogDTO {
   enabled: boolean;
   coverAll: boolean; // névoa cobre toda a cena (Ocultar tudo)
   revealedCells: string[]; // "col,row"
-  brushReveal: FogBrushDot[]; // círculos revelados à mão livre
-  brushHide: FogBrushDot[];   // círculos ocultados à mão livre
+  brushReveal: FogShape[]; // revelado à mão: círculos do pincel e polígonos
+  brushHide: FogShape[];   // ocultado à mão: círculos do pincel e polígonos
 }
 
 export interface FogBrushDot {
@@ -52,6 +52,15 @@ export interface FogBrushDot {
   y: number;
   r: number;
 }
+
+/** Polígono de névoa: pontos em sequência [x1, y1, x2, y2, ...] (fecha sozinho). */
+export interface FogPolygon {
+  points: number[];
+}
+
+export type FogShape = FogBrushDot | FogPolygon;
+
+export const isFogPolygon = (shape: FogShape): shape is FogPolygon => Array.isArray((shape as FogPolygon).points);
 
 export interface PublicUser {
   id: string;

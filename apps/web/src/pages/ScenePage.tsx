@@ -5,7 +5,7 @@ import { scenesApi } from '../lib/scenes.js';
 import { campaignsApi } from '../lib/campaigns.js';
 import { uploadAsset, assetUrl, nameFromFileName } from '../lib/assets.js';
 import { useAuth } from '../store/auth.js';
-import { MapEditor } from '../components/MapEditor.js';
+import { MapEditor, type FogTool } from '../components/MapEditor.js';
 import { DicePanel } from '../components/DicePanel.js';
 import { CombatTracker } from '../components/CombatTracker.js';
 import { LibraryPanel } from '../components/LibraryPanel.js';
@@ -25,6 +25,13 @@ function upsertById<T extends { id: string }>(list: T[], item: T): T[] {
 }
 
 const NOTICE_MS = 5000; // tempo do aviso flutuante na tela
+
+// Ferramentas do menu da névoa (para esconder e para revelar)
+const FOG_TOOLS: { tool: FogTool; label: string }[] = [
+  { tool: 'brush', label: 'Pincel' },
+  { tool: 'cell', label: 'Célula' },
+  { tool: 'polygon', label: 'Polígono' },
+];
 
 export function ScenePage() {
   const { campaignId = '' } = useParams();
@@ -51,7 +58,7 @@ export function ScenePage() {
   const [libOpen, setLibOpen] = useState(false); // começa fechada; abre pelo botão 📚 Biblioteca
   const [snap, setSnap] = useState(true);
   const [fogMode, setFogMode] = useState<'reveal' | 'hide' | null>(null);
-  const [fogBrush, setFogBrush] = useState(true); // true = pincel livre; false = por célula
+  const [fogTool, setFogTool] = useState<FogTool>('brush'); // pincel livre, célula ou polígono
   const [brushSize, setBrushSize] = useState(60);
   const [fogMenu, setFogMenu] = useState(false);
   const [error, setError] = useState<string | null>(null); // a mesa não carregou
@@ -389,6 +396,21 @@ export function ScenePage() {
     );
   }
 
+  // polígono fechado: entra na mesma lista do pincel (aparece na hora; o servidor confirma)
+  function onFogPolygon(points: number[], mode: 'reveal' | 'hide') {
+    if (!current || !isGm) return;
+    setCurrent((c) => {
+      if (!c) return c;
+      const fog = { ...c.fog, enabled: true };
+      if (mode === 'reveal') fog.brushReveal = [...c.fog.brushReveal, { points }];
+      else fog.brushHide = [...c.fog.brushHide, { points }];
+      return { ...c, fog };
+    });
+    void scenesApi.polygonFog(campaignId, current.scene.id, points, mode).catch((e: any) =>
+      setNotice(e?.message ?? 'Falha ao desenhar o polígono de névoa.'),
+    );
+  }
+
   async function resetFog(revealAll: boolean) {
     if (!current || !isGm) return;
     const fog = await scenesApi.resetFog(campaignId, current.scene.id, revealAll);
@@ -524,43 +546,39 @@ export function ScenePage() {
               </button>
               {fogMenu && (
                 <div className="fog-menu card">
-                  <div className="fog-group">
-                    <span className="fog-group-label">Desenhar névoa (esconder)</span>
-                    <div className="fog-row">
-                      <button
-                        className={`btn sm ${fogMode === 'hide' && fogBrush ? '' : 'ghost'}`}
-                        onClick={() =>
-                          fogMode === 'hide' && fogBrush ? setFogMode(null) : (setFogMode('hide'), setFogBrush(true))
-                        }
-                      >Pincel</button>
-                      <button
-                        className={`btn sm ${fogMode === 'hide' && !fogBrush ? '' : 'ghost'}`}
-                        onClick={() =>
-                          fogMode === 'hide' && !fogBrush ? setFogMode(null) : (setFogMode('hide'), setFogBrush(false))
-                        }
-                      >Célula</button>
+                  {(
+                    [
+                      ['hide', 'Desenhar névoa (esconder)'],
+                      ['reveal', 'Revelar'],
+                    ] as const
+                  ).map(([mode, title]) => (
+                    <div className="fog-group" key={mode}>
+                      <span className="fog-group-label">{title}</span>
+                      <div className="fog-row">
+                        {FOG_TOOLS.map(({ tool, label }) => {
+                          const on = fogMode === mode && fogTool === tool;
+                          return (
+                            <button
+                              key={tool}
+                              className={`btn sm ${on ? '' : 'ghost'}`}
+                              onClick={() => (on ? setFogMode(null) : (setFogMode(mode), setFogTool(tool)))}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  ))}
 
-                  <div className="fog-group">
-                    <span className="fog-group-label">Revelar</span>
-                    <div className="fog-row">
-                      <button
-                        className={`btn sm ${fogMode === 'reveal' && fogBrush ? '' : 'ghost'}`}
-                        onClick={() =>
-                          fogMode === 'reveal' && fogBrush ? setFogMode(null) : (setFogMode('reveal'), setFogBrush(true))
-                        }
-                      >Pincel</button>
-                      <button
-                        className={`btn sm ${fogMode === 'reveal' && !fogBrush ? '' : 'ghost'}`}
-                        onClick={() =>
-                          fogMode === 'reveal' && !fogBrush ? setFogMode(null) : (setFogMode('reveal'), setFogBrush(false))
-                        }
-                      >Célula</button>
-                    </div>
-                  </div>
+                  {fogMode && fogTool === 'polygon' && (
+                    <p className="fog-hint">
+                      Clique para marcar os pontos e no primeiro (ou Enter) para fechar. Esc cancela, Backspace
+                      desfaz o último ponto.
+                    </p>
+                  )}
 
-                  {fogMode && fogBrush && (
+                  {fogMode && fogTool === 'brush' && (
                     <div className="fog-group">
                       <span className="fog-group-label">Espessura do pincel: {brushSize}px</span>
                       <input
@@ -601,7 +619,8 @@ export function ScenePage() {
               onOverlayChange={onOverlayChange}
               fog={current.fog}
               fogPaintMode={isGm ? fogMode : null}
-              fogBrush={fogBrush}
+              fogTool={fogTool}
+              onFogPolygon={onFogPolygon}
               brushSize={brushSize}
               onFogPaint={onFogPaint}
               onFogBrush={onFogBrush}

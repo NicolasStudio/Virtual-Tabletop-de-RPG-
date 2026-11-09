@@ -204,6 +204,19 @@ export class ScenesController {
     return fog;
   }
 
+  // Polígono: [x1, y1, x2, y2, ...] em coordenadas da cena
+  @Post(':sceneId/fog/polygon')
+  @RequireRole('GM')
+  async polygonFog(
+    @Param('campaignId') campaignId: string,
+    @Param('sceneId') sceneId: string,
+    @Body() dto: { points: number[]; mode: 'reveal' | 'hide' },
+  ) {
+    const fog = await this.scenes.paintFogPolygon(campaignId, sceneId, dto.points ?? [], dto.mode === 'hide' ? 'hide' : 'reveal');
+    this.realtime.broadcastFog(campaignId, sceneId, fog);
+    return fog;
+  }
+
   @Post(':sceneId/fog/reset')
   @RequireRole('GM')
   async resetFog(
